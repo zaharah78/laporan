@@ -36,8 +36,8 @@
                 </div>
             </div>
             <div class="flex items-center space-x-6">
-                <button onclick="switchView('dashboard')" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">DASHBOARD</button>
-                <button id="admin-login-btn" onclick="openLoginModal()" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
+                <button onclick="window.switchView('dashboard')" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">DASHBOARD</button>
+                <button id="admin-login-btn" onclick="window.openLoginModal()" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
                     <i data-lucide="lock" class="w-4 h-4 text-blue-200"></i>
                     <span class="text-sm font-bold uppercase">ADMIN</span>
                 </button>
@@ -45,7 +45,7 @@
         </div>
     </nav>
 
-    <!-- MODAL LOG MASUK CUSTOM (Penyelesaian kepada butang stuck) -->
+    <!-- MODAL LOG MASUK CUSTOM -->
     <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
             <div class="p-8">
@@ -64,8 +64,8 @@
                         <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">Kata Laluan</label>
                         <input type="password" id="admin-pw" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm font-bold">
                     </div>
-                    <button onclick="submitLogin()" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-900 transition mt-4 uppercase tracking-wider">MASUK SISTEM</button>
-                    <button onclick="closeLoginModal()" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
+                    <button onclick="window.submitLogin()" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-900 transition mt-4 uppercase tracking-wider">MASUK SISTEM</button>
+                    <button onclick="window.closeLoginModal()" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
                 </div>
             </div>
         </div>
@@ -132,7 +132,7 @@
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
                 <div class="p-8 border-b flex flex-col md:flex-row justify-between items-center bg-slate-50/50 gap-4">
                     <div><h2 class="text-2xl font-black text-slate-900 uppercase">ARKIB LAPORAN DIGITAL</h2></div>
-                    <button onclick="switchView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition">Kembali</button>
+                    <button onclick="window.switchView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition">Kembali</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -152,7 +152,7 @@
         <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200">
             <div id="printable-area" class="bg-white p-12 leading-relaxed text-slate-900"></div>
             <div class="bg-slate-50 p-6 flex justify-end space-x-4 border-t sticky bottom-0">
-                <button onclick="closePrintModal()" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
+                <button onclick="window.closePrintModal()" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
                 <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide">Cetak Laporan</button>
             </div>
         </div>
@@ -163,17 +163,53 @@
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+        // Firebase Configuration
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'laporan-koko-mitaj-web';
 
         let currentUser = null;
         let base64Images = [];
         let unsubscribeReports = null;
 
+        // Penting: Daftarkan fungsi ke objek window supaya boleh diakses oleh HTML onclick
+        window.openLoginModal = () => {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('admin-id').focus();
+        };
+
+        window.closeLoginModal = () => {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('admin-id').value = '';
+            document.getElementById('admin-pw').value = '';
+        };
+
+        window.submitLogin = () => {
+            const id = document.getElementById('admin-id').value;
+            const pw = document.getElementById('admin-pw').value;
+            if (id === "admin123" && pw === "sekolah2024") {
+                window.closeLoginModal();
+                window.switchView('admin');
+            } else {
+                alert("ID atau Kata Laluan Salah.");
+            }
+        };
+
+        window.switchView = (view) => {
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
+            const targetView = document.getElementById(view + '-view');
+            if (targetView) targetView.classList.remove('hidden');
+            window.scrollTo(0,0);
+        };
+
+        window.closePrintModal = () => {
+            document.getElementById('print-modal').classList.add('hidden');
+        };
+
+        // Authentication logic
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -194,46 +230,21 @@
         function setupFirestoreListeners() {
             if (!currentUser) return;
             const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
+            if (unsubscribeReports) unsubscribeReports();
+            
             unsubscribeReports = onSnapshot(reportsRef, (snapshot) => {
                 const reports = [];
                 snapshot.forEach(doc => reports.push({ id: doc.id, ...doc.data() }));
                 renderAdminTable(reports);
                 document.getElementById('loading-table').classList.add('hidden');
-            });
+            }, (err) => console.error("Snapshot error:", err));
         }
 
-        // Global Window Functions for UI
-        window.openLoginModal = () => {
-            document.getElementById('login-modal').classList.remove('hidden');
-            document.getElementById('admin-id').focus();
-        };
-
-        window.closeLoginModal = () => {
-            document.getElementById('login-modal').classList.add('hidden');
-            document.getElementById('admin-id').value = '';
-            document.getElementById('admin-pw').value = '';
-        };
-
-        window.submitLogin = () => {
-            const id = document.getElementById('admin-id').value;
-            const pw = document.getElementById('admin-pw').value;
-            if (id === "admin123" && pw === "sekolah2024") {
-                closeLoginModal();
-                switchView('admin');
-            } else {
-                alert("ID atau Kata Laluan Salah.");
-            }
-        };
-
-        window.switchView = (view) => {
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.add('hidden');
-            document.getElementById(view + '-view').classList.remove('hidden');
-            window.scrollTo(0,0);
-        };
-
+        // Form Submission
         document.getElementById('laporan-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!currentUser) return alert("Sila tunggu sistem bersedia...");
+            
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
             btn.innerHTML = `<div class="loader mr-3"></div> MENYIMPAN...`;
@@ -255,8 +266,10 @@
                 document.getElementById('laporan-form').reset();
                 document.getElementById('preview-container').innerHTML = '';
                 base64Images = [];
-            } catch (err) { alert("Gagal menyimpan data."); }
-            finally {
+            } catch (err) { 
+                console.error(err);
+                alert("Gagal menyimpan data."); 
+            } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
                 lucide.createIcons();
@@ -265,14 +278,16 @@
 
         window.deleteReport = async (id) => {
             if (confirm("Padam rekod ini?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
+                } catch (err) { alert("Ralat memadam."); }
             }
         };
 
         function renderAdminTable(data) {
             const tbody = document.getElementById('admin-table-body');
             tbody.innerHTML = '';
-            data.sort((a,b) => b.timestamp.localeCompare(a.timestamp)).forEach(item => {
+            data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-blue-50/30 transition text-sm";
                 tr.innerHTML = `
@@ -281,8 +296,8 @@
                     <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
                     <td class="p-6 text-center">
                         <div class="flex justify-center space-x-2">
-                            <button onclick='generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                            <button onclick="deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                            <button onclick='window.generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                            <button onclick="window.deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg"><i data-lucide="trash" class="w-4 h-4"></i></button>
                         </div>
                     </td>
                 `;
@@ -290,20 +305,6 @@
             });
             lucide.createIcons();
         }
-
-        document.getElementById('gambar_upload').addEventListener('change', (e) => {
-            const preview = document.getElementById('preview-container');
-            preview.innerHTML = '';
-            base64Images = [];
-            Array.from(e.target.files).slice(0, 4).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    base64Images.push(ev.target.result);
-                    preview.innerHTML += `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">`;
-                };
-                reader.readAsDataURL(file);
-            });
-        });
 
         window.generatePreview = (report) => {
             const area = document.getElementById('printable-area');
@@ -323,7 +324,7 @@
                     <div><p class="font-black border-l-4 border-blue-800 pl-2 mb-2">OBJEKTIF</p><p class="text-slate-700">${report.objektif}</p></div>
                     <div><p class="font-black border-l-4 border-blue-800 pl-2 mb-2">LAPORAN AKTIVITI</p><p class="whitespace-pre-line text-slate-700">${report.aktiviti}</p></div>
                     <div class="grid grid-cols-2 gap-4">
-                        ${report.imej.map(img => `<img src="${img}" class="w-full h-48 object-cover rounded-xl border">`).join('')}
+                        ${(report.imej || []).map(img => `<img src="${img}" class="w-full h-48 object-cover rounded-xl border">`).join('')}
                     </div>
                 </div>
             `;
@@ -331,8 +332,25 @@
             lucide.createIcons();
         };
 
-        window.closePrintModal = () => document.getElementById('print-modal').classList.add('hidden');
-        
+        // Handling Images
+        document.getElementById('gambar_upload').addEventListener('change', (e) => {
+            const preview = document.getElementById('preview-container');
+            preview.innerHTML = '';
+            base64Images = [];
+            Array.from(e.target.files).slice(0, 4).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    base64Images.push(ev.target.result);
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.className = "w-full aspect-square object-cover rounded-xl border-2 border-slate-200";
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // Initialize Lucide Icons
         window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
 </body>
