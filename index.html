@@ -32,7 +32,35 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
         .status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
         .status-offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .status-pending { background-color: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
     </style>
+    
+    <script>
+        function toggleLoginModal(show) {
+            const modal = document.getElementById('login-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                document.getElementById('admin-id').focus();
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('admin-id').value = '';
+                document.getElementById('admin-pw').value = '';
+            }
+        }
+
+        function switchAppView(view) {
+            const dashboard = document.getElementById('dashboard-view');
+            const admin = document.getElementById('admin-view');
+            if (view === 'admin') {
+                dashboard.classList.add('hidden');
+                admin.classList.remove('hidden');
+            } else {
+                admin.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+            }
+            window.scrollTo(0,0);
+        }
+    </script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900">
 
@@ -48,8 +76,8 @@
             </div>
             <div class="flex flex-col items-end">
                 <div class="flex items-center space-x-6 mb-1">
-                    <button id="nav-home-btn" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">UTAMA</button>
-                    <button id="admin-login-btn" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
+                    <button onclick="switchAppView('dashboard')" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">UTAMA</button>
+                    <button onclick="toggleLoginModal(true)" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
                         <i data-lucide="lock" class="w-4 h-4 text-blue-200"></i>
                         <span class="text-sm font-bold uppercase">PENTADBIR</span>
                     </button>
@@ -57,13 +85,13 @@
                 <!-- Firebase Connection Status -->
                 <div id="db-status-container" class="flex items-center opacity-70">
                     <span id="status-dot" class="status-dot status-offline"></span>
-                    <span id="status-text" class="text-[9px] font-bold uppercase tracking-tighter">OFFLINE</span>
+                    <span id="status-text" class="text-[9px] font-bold uppercase tracking-tighter text-red-300">DISCONNECTED</span>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- MODAL LOG MASUK (Popup) -->
+    <!-- MODAL LOG MASUK -->
     <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 modal-enter">
             <div class="p-8">
@@ -83,7 +111,7 @@
                         <input type="password" id="admin-pw" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm font-bold" placeholder="••••••••">
                     </div>
                     <button id="modal-submit-btn" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-900 transition mt-4 uppercase tracking-wider">MASUK SISTEM</button>
-                    <button id="modal-close-btn" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
+                    <button onclick="toggleLoginModal(false)" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
                 </div>
             </div>
         </div>
@@ -149,7 +177,7 @@
             </div>
         </div>
 
-        <!-- View Pentadbir (Admin) -->
+        <!-- View Pentadbir -->
         <div id="admin-view" class="hidden max-w-6xl mx-auto">
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
                 <div class="p-8 border-b flex flex-col md:flex-row justify-between items-center bg-slate-50/50 gap-4">
@@ -157,7 +185,7 @@
                         <h2 class="text-2xl font-black text-slate-900 uppercase">ARKIB LAPORAN DIGITAL</h2>
                         <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Senarai semua aktiviti yang telah direkodkan</p>
                     </div>
-                    <button id="admin-back-btn" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition flex items-center">
+                    <button onclick="switchAppView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition flex items-center">
                         <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
                     </button>
                 </div>
@@ -175,12 +203,12 @@
         </div>
     </div>
 
-    <!-- Modal Cetakan Laporan -->
+    <!-- Modal Cetakan -->
     <div id="print-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
         <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200">
             <div id="printable-area" class="bg-white p-12 leading-relaxed text-slate-900"></div>
             <div class="bg-slate-50 p-6 flex justify-end space-x-4 border-t sticky bottom-0">
-                <button id="close-print-btn" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
+                <button onclick="document.getElementById('print-modal').classList.add('hidden')" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
                 <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide shadow-lg">Cetak Laporan</button>
             </div>
         </div>
@@ -191,127 +219,129 @@
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Firebase Configuration
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // Global State
+        let db, auth;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'laporan-koko-mitaj-web';
-
-        let currentUser = null;
         let base64Images = [];
-        let unsubscribeReports = null;
 
-        // --- UI NAVIGATION & MODAL HANDLERS ---
-        const loginModal = document.getElementById('login-modal');
-        const adminView = document.getElementById('admin-view');
-        const dashboardView = document.getElementById('dashboard-view');
-
-        const openLoginModal = () => {
-            loginModal.classList.remove('hidden');
-            document.getElementById('admin-id').focus();
+        // UI Status Helper
+        const updateStatus = (mode) => {
+            const dot = document.getElementById('status-dot');
+            const txt = document.getElementById('status-text');
+            
+            if (mode === 'online') {
+                dot.className = "status-dot status-online";
+                txt.innerText = "CONNECTED";
+                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-green-400";
+            } else if (mode === 'pending') {
+                dot.className = "status-dot status-pending";
+                txt.innerText = "CONNECTING...";
+                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-amber-400";
+            } else {
+                dot.className = "status-dot status-offline";
+                txt.innerText = "DISCONNECTED";
+                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-red-400";
+            }
         };
 
-        const closeLoginModal = () => {
-            loginModal.classList.add('hidden');
-            document.getElementById('admin-id').value = '';
-            document.getElementById('admin-pw').value = '';
-        };
+        // Initialize Firebase
+        try {
+            updateStatus('pending');
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
 
-        const switchView = (view) => {
-            dashboardView.classList.add('hidden');
-            adminView.classList.add('hidden');
-            if (view === 'admin') adminView.classList.remove('hidden');
-            else dashboardView.classList.remove('hidden');
-            window.scrollTo(0,0);
-        };
+            // Auth Logic with exponential backoff/retry
+            const attemptSignIn = async (retries = 3) => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (err) {
+                    if (retries > 0) {
+                        setTimeout(() => attemptSignIn(retries - 1), 2000);
+                    } else {
+                        console.error("Auth failed after retries");
+                        updateStatus('offline');
+                    }
+                }
+            };
 
-        const submitLogin = () => {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    updateStatus('online');
+                    loadData();
+                } else {
+                    updateStatus('offline');
+                }
+            });
+
+            attemptSignIn();
+        } catch (e) {
+            console.error("Firebase startup error:", e);
+            updateStatus('offline');
+        }
+
+        // Login Submit
+        document.getElementById('modal-submit-btn').addEventListener('click', () => {
             const id = document.getElementById('admin-id').value;
             const pw = document.getElementById('admin-pw').value;
             if (id.toLowerCase() === "admin" && pw === "sekolah2024") {
-                closeLoginModal();
-                switchView('admin');
+                toggleLoginModal(false);
+                switchAppView('admin');
             } else {
-                alert("ID Pengguna atau Kata Laluan Salah!");
-            }
-        };
-
-        // --- ATTACH EVENTS DIRECTLY (Bypass onclick issues) ---
-        document.getElementById('admin-login-btn').addEventListener('click', openLoginModal);
-        document.getElementById('modal-close-btn').addEventListener('click', closeLoginModal);
-        document.getElementById('modal-submit-btn').addEventListener('click', submitLogin);
-        document.getElementById('nav-home-btn').addEventListener('click', () => switchView('dashboard'));
-        document.getElementById('admin-back-btn').addEventListener('click', () => switchView('dashboard'));
-        document.getElementById('close-print-btn').addEventListener('click', () => {
-            document.getElementById('print-modal').classList.add('hidden');
-        });
-
-        // --- FIREBASE CONNECTION STATUS ---
-        const updateStatusIndicator = (isOnline) => {
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-            if (isOnline) {
-                dot.className = "status-dot status-online";
-                text.innerText = "ONLINE";
-                text.classList.add('text-green-300');
-                text.classList.remove('text-red-300');
-            } else {
-                dot.className = "status-dot status-offline";
-                text.innerText = "OFFLINE";
-                text.classList.add('text-red-300');
-                text.classList.remove('text-green-300');
-            }
-        };
-
-        // --- FIREBASE LOGIC ---
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                updateStatusIndicator(true);
-            } catch (error) { 
-                console.error("Auth Error:", error);
-                updateStatusIndicator(false);
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                updateStatusIndicator(true);
-                setupFirestoreListeners();
-            } else {
-                updateStatusIndicator(false);
+                alert("ID atau Kata Laluan Salah!");
             }
         });
 
-        initAuth();
-
-        function setupFirestoreListeners() {
-            if (!currentUser) return;
+        // Load Data from Firestore
+        function loadData() {
+            if (!auth.currentUser) return;
             const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
-            if (unsubscribeReports) unsubscribeReports();
             
-            unsubscribeReports = onSnapshot(reportsRef, (snapshot) => {
-                const reports = [];
-                snapshot.forEach(doc => reports.push({ id: doc.id, ...doc.data() }));
-                renderAdminTable(reports);
+            onSnapshot(reportsRef, (snap) => {
+                const data = [];
+                snap.forEach(d => data.push({id: d.id, ...d.data()}));
+                renderTable(data);
                 document.getElementById('loading-table').classList.add('hidden');
+                updateStatus('online'); // Confirm online after data fetch
             }, (err) => {
-                console.error("Snapshot error:", err);
-                updateStatusIndicator(false);
+                console.error("Firestore access error:", err);
+                updateStatus('offline');
             });
         }
 
-        // Form Submission
+        // Render Table
+        function renderTable(data) {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '';
+            data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-50/30 transition text-sm";
+                tr.innerHTML = `
+                    <td class="p-6 font-bold text-slate-700">${item.tarikh}</td>
+                    <td class="p-6 font-black text-blue-900 uppercase text-[11px] leading-tight">${item.nama}</td>
+                    <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
+                    <td class="p-6 text-center">
+                        <div class="flex justify-center space-x-2">
+                            <button onclick='window.viewReport(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                            <button onclick="window.delReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // Save Form
         document.getElementById('laporan-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentUser) return alert("Sila tunggu sehingga sistem sedia...");
-            
+            if (!auth.currentUser) return alert("Sila pastikan sambungan stabil (CONNECTED).");
+
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
             btn.innerHTML = `<div class="loader mr-3"></div> MENYIMPAN...`;
@@ -326,16 +356,14 @@
                     objektif: document.getElementById('objektif').value.toUpperCase(),
                     aktiviti: document.getElementById('aktiviti').value.toUpperCase(),
                     imej: base64Images,
-                    timestamp: new Date().toISOString(),
-                    uid: currentUser.uid
+                    timestamp: new Date().toISOString()
                 });
-                alert("Laporan berjaya disimpan ke arkib.");
+                alert("Laporan Berjaya Disimpan!");
                 document.getElementById('laporan-form').reset();
                 document.getElementById('preview-container').innerHTML = '';
                 base64Images = [];
-            } catch (err) { 
-                console.error(err);
-                alert("Gagal menyimpan data."); 
+            } catch (err) {
+                alert("Gagal menyimpan. Sila periksa sambungan internet anda.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
@@ -343,16 +371,8 @@
             }
         });
 
-        // Delete Handler (Global to window for table buttons)
-        window.deleteReport = async (id) => {
-            if (confirm("Padam laporan ini secara kekal?")) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
-                } catch (err) { alert("Ralat memadam."); }
-            }
-        };
-
-        window.generatePreview = (report) => {
+        // Global functions for table buttons
+        window.viewReport = (report) => {
             const area = document.getElementById('printable-area');
             area.innerHTML = `
                 <div class="flex justify-between items-center border-b-4 border-slate-900 pb-6 mb-8 uppercase">
@@ -362,62 +382,45 @@
                         <p class="text-xs font-bold text-slate-600">Laporan Aktiviti Kokurikulum Digital</p>
                     </div>
                 </div>
-                <div class="bg-slate-50 p-6 rounded-2xl border mb-8">
-                    <p class="text-[10px] font-black text-blue-800 mb-1 uppercase tracking-widest">NAMA PROGRAM / UNIT</p>
-                    <p class="font-black text-xl text-slate-900 uppercase">${report.nama}</p>
+                <div class="bg-slate-50 p-6 rounded-2xl border mb-8 uppercase">
+                    <p class="text-[10px] font-black text-blue-800 mb-1 tracking-widest">NAMA PROGRAM / UNIT</p>
+                    <p class="font-black text-xl text-slate-900">${report.nama}</p>
                     <p class="text-sm font-bold mt-2">${report.tarikh} (${report.hari})</p>
                 </div>
-                <div class="space-y-8 uppercase text-sm">
-                    <div class="grid grid-cols-2 gap-6">
-                        <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">TEMPAT</p><p class="text-slate-700 font-bold bg-white p-3 rounded-lg border">${report.tempat}</p></div>
-                        <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">MASA</p><p class="text-slate-700 font-bold bg-white p-3 rounded-lg border">${report.masa}</p></div>
-                    </div>
-                    <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">OBJEKTIF</p><div class="bg-white p-4 rounded-xl border text-slate-600">${report.objektif || 'TIADA'}</div></div>
-                    <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">LAPORAN AKTIVITI</p><div class="bg-white p-4 rounded-xl border text-slate-700 whitespace-pre-line">${report.aktiviti}</div></div>
+                <div class="space-y-6 uppercase text-sm">
                     <div class="grid grid-cols-2 gap-4">
-                        ${(report.imej || []).map(img => `<img src="${img}" class="w-full h-64 object-cover rounded-xl border shadow-sm">`).join('')}
+                        <div><p class="font-black text-blue-800 mb-1">TEMPAT</p><p class="p-3 bg-white border rounded-lg">${report.tempat}</p></div>
+                        <div><p class="font-black text-blue-800 mb-1">MASA</p><p class="p-3 bg-white border rounded-lg">${report.masa}</p></div>
+                    </div>
+                    <div><p class="font-black text-blue-800 mb-1">OBJEKTIF</p><div class="p-4 bg-white border rounded-xl text-slate-600 min-h-[50px]">${report.objektif || 'TIADA'}</div></div>
+                    <div><p class="font-black text-blue-800 mb-1">LAPORAN AKTIVITI</p><div class="p-4 bg-white border rounded-xl text-slate-700 whitespace-pre-line min-h-[150px]">${report.aktiviti}</div></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${(report.imej || []).map(img => `<img src="${img}" class="w-full h-52 object-cover rounded-xl border">`).join('')}
                     </div>
                 </div>
             `;
             document.getElementById('print-modal').classList.remove('hidden');
-            lucide.createIcons();
         };
 
-        function renderAdminTable(data) {
-            const tbody = document.getElementById('admin-table-body');
-            tbody.innerHTML = '';
-            data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-blue-50/30 transition text-sm";
-                tr.innerHTML = `
-                    <td class="p-6 font-bold text-slate-700">${item.tarikh}</td>
-                    <td class="p-6 font-black text-blue-900 uppercase text-[11px] leading-tight">${item.nama}</td>
-                    <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
-                    <td class="p-6 text-center">
-                        <div class="flex justify-center space-x-2">
-                            <button onclick='window.generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100 transition"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                            <button onclick="window.deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition"><i data-lucide="trash" class="w-4 h-4"></i></button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            lucide.createIcons();
-        }
+        window.delReport = async (id) => {
+            if (confirm("Padam laporan ini secara kekal?")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
+                } catch (e) { alert("Ralat semasa memadam."); }
+            }
+        };
 
-        // Image handling
+        // File upload
         document.getElementById('gambar_upload').addEventListener('change', (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
             base64Images = [];
-            const files = Array.from(e.target.files).slice(0, 4);
-            files.forEach(file => {
+            Array.from(e.target.files).slice(0,4).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     base64Images.push(ev.target.result);
                     const div = document.createElement('div');
-                    div.className = "relative group";
-                    div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">`;
+                    div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200 shadow-sm">`;
                     preview.appendChild(div);
                 };
                 reader.readAsDataURL(file);
