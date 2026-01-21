@@ -13,7 +13,6 @@
         .glass-nav { background: rgba(29, 78, 216, 0.95); backdrop-filter: blur(10px); }
         @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
         
-        /* Animasi loading sederhana */
         .loader {
             border: 3px solid #f3f3f3;
             border-radius: 50%;
@@ -38,7 +37,7 @@
             </div>
             <div class="flex items-center space-x-6">
                 <button onclick="switchView('dashboard')" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">DASHBOARD</button>
-                <button id="admin-login-btn" onclick="handleAdminLogin()" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
+                <button id="admin-login-btn" onclick="openLoginModal()" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
                     <i data-lucide="lock" class="w-4 h-4 text-blue-200"></i>
                     <span class="text-sm font-bold uppercase">ADMIN</span>
                 </button>
@@ -46,10 +45,33 @@
         </div>
     </nav>
 
-    <div id="main-content" class="container mx-auto px-4 py-10">
-        <!-- STATUS BAR DISEMBUNYIKAN (Hidden) -->
-        <div id="auth-status" class="hidden"></div>
+    <!-- MODAL LOG MASUK CUSTOM (Penyelesaian kepada butang stuck) -->
+    <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+            <div class="p-8">
+                <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="shield-check" class="w-8 h-8 text-blue-800"></i>
+                </div>
+                <h3 class="text-center text-xl font-black text-slate-900 mb-2 uppercase">LOG MASUK ADMIN</h3>
+                <p class="text-center text-xs text-slate-500 mb-8 font-bold uppercase tracking-widest">Sila masukkan kelayakan anda</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">ID Pengguna</label>
+                        <input type="text" id="admin-id" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition uppercase text-sm font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">Kata Laluan</label>
+                        <input type="password" id="admin-pw" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm font-bold">
+                    </div>
+                    <button onclick="submitLogin()" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-900 transition mt-4 uppercase tracking-wider">MASUK SISTEM</button>
+                    <button onclick="closeLoginModal()" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div id="main-content" class="container mx-auto px-4 py-10">
         <div id="dashboard-view" class="max-w-4xl mx-auto">
             <div class="text-center mb-10 no-print">
                 <h1 class="text-4xl font-black text-slate-900 mb-2 tracking-tight uppercase">LAPORAN PROGRAM KO-KURIKULUM</h1>
@@ -92,7 +114,6 @@
                                         <div class="flex text-sm text-slate-600">
                                             <label for="gambar_upload" class="relative cursor-pointer font-bold text-blue-700 uppercase"><span>Muat naik fail</span><input id="gambar_upload" type="file" class="sr-only" accept="image/*" multiple></label>
                                         </div>
-                                        <p class="text-xs text-slate-400 uppercase font-medium">PNG, JPG sehingga 1MB setiap satu</p>
                                     </div>
                                 </div>
                                 <div id="preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
@@ -107,14 +128,11 @@
             </div>
         </div>
 
-        <!-- ADMIN VIEW -->
         <div id="admin-view" class="hidden max-w-6xl mx-auto">
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
                 <div class="p-8 border-b flex flex-col md:flex-row justify-between items-center bg-slate-50/50 gap-4">
                     <div><h2 class="text-2xl font-black text-slate-900 uppercase">ARKIB LAPORAN DIGITAL</h2></div>
-                    <div class="flex space-x-3">
-                        <button onclick="switchView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition">Kembali</button>
-                    </div>
+                    <button onclick="switchView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition">Kembali</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -124,30 +142,27 @@
                 </div>
                 <div id="loading-table" class="text-center py-20 flex flex-col items-center justify-center space-y-3">
                     <div class="loader"></div>
-                    <span class="uppercase text-xs font-bold text-slate-400 tracking-widest">Memuatkan data dari pangkalan data...</span>
+                    <span class="uppercase text-xs font-bold text-slate-400 tracking-widest">Memuatkan data...</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- PRINT MODAL -->
     <div id="print-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
-        <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200 shadow-2xl">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200">
             <div id="printable-area" class="bg-white p-12 leading-relaxed text-slate-900"></div>
             <div class="bg-slate-50 p-6 flex justify-end space-x-4 border-t sticky bottom-0">
-                <button onclick="closePrintModal()" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500 hover:text-slate-700">Tutup</button>
-                <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide shadow-lg hover:bg-blue-900 transition">Cetak Laporan</button>
+                <button onclick="closePrintModal()" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
+                <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide">Cetak Laporan</button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Konfigurasi daripada persekitaran
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -159,104 +174,54 @@
         let base64Images = [];
         let unsubscribeReports = null;
 
-        const getCollectionRef = () => collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
-
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (tokenError) {
-                        await signInAnonymously(auth);
-                    }
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (error) {
-                console.error("Auth Error:", error);
-            }
+            } catch (error) { console.error("Auth Error:", error); }
         };
 
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
-            if (user) {
-                setupFirestoreListeners();
-            } else {
-                if (unsubscribeReports) unsubscribeReports();
-            }
+            if (user) setupFirestoreListeners();
         });
 
         initAuth();
 
         function setupFirestoreListeners() {
             if (!currentUser) return;
-            if (unsubscribeReports) unsubscribeReports();
-
-            const reportsRef = getCollectionRef();
-
-            unsubscribeReports = onSnapshot(reportsRef, 
-                (snapshot) => {
-                    const reports = [];
-                    snapshot.forEach(doc => reports.push({ id: doc.id, ...doc.data() }));
-                    renderAdminTable(reports);
-                    document.getElementById('loading-table').classList.add('hidden');
-                }, 
-                (error) => {
-                    console.error("Firestore Error:", error);
-                }
-            );
+            const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
+            unsubscribeReports = onSnapshot(reportsRef, (snapshot) => {
+                const reports = [];
+                snapshot.forEach(doc => reports.push({ id: doc.id, ...doc.data() }));
+                renderAdminTable(reports);
+                document.getElementById('loading-table').classList.add('hidden');
+            });
         }
 
-        document.getElementById('laporan-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                alert("Sistem belum sedia. Sila tunggu seketika.");
-                return;
-            }
-            
-            const btn = document.getElementById('btn-submit');
-            btn.disabled = true;
-            btn.innerHTML = `<div class="loader mr-3"></div> MENYIMPAN...`;
+        // Global Window Functions for UI
+        window.openLoginModal = () => {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('admin-id').focus();
+        };
 
-            try {
-                const newReport = {
-                    nama: document.getElementById('nama_program').value.toUpperCase(),
-                    tarikh: document.getElementById('tarikh').value,
-                    hari: document.getElementById('hari').value.toUpperCase(),
-                    tempat: document.getElementById('tempat').value.toUpperCase(),
-                    masa: document.getElementById('masa').value.toUpperCase(),
-                    objektif: document.getElementById('objektif').value.toUpperCase(),
-                    aktiviti: document.getElementById('aktiviti').value.toUpperCase(),
-                    imej: base64Images,
-                    timestamp: new Date().toISOString(),
-                    uid: currentUser.uid
-                };
+        window.closeLoginModal = () => {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('admin-id').value = '';
+            document.getElementById('admin-pw').value = '';
+        };
 
-                await addDoc(getCollectionRef(), newReport);
-                alert("Laporan berjaya disimpan ke pangkalan data.");
-                
-                document.getElementById('laporan-form').reset();
-                document.getElementById('preview-container').innerHTML = '';
-                base64Images = [];
-            } catch (err) {
-                console.error("Save error:", err);
-                alert("Gagal menyimpan. Sila cuba lagi.");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
-                lucide.createIcons();
-            }
-        });
-
-        window.deleteReport = async (id) => {
-            if (!currentUser) return;
-            if (confirm("Padam rekod ini secara kekal?")) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
-                } catch (err) {
-                    console.error("Delete error:", err);
-                    alert("Ralat memadam data.");
-                }
+        window.submitLogin = () => {
+            const id = document.getElementById('admin-id').value;
+            const pw = document.getElementById('admin-pw').value;
+            if (id === "admin123" && pw === "sekolah2024") {
+                closeLoginModal();
+                switchView('admin');
+            } else {
+                alert("ID atau Kata Laluan Salah.");
             }
         };
 
@@ -267,37 +232,46 @@
             window.scrollTo(0,0);
         };
 
-        // Pembaikan fungsi log masuk agar tidak stuck
-        window.handleAdminLogin = () => {
+        document.getElementById('laporan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="loader mr-3"></div> MENYIMPAN...`;
+
             try {
-                const id = prompt("ID PENTADBIR:");
-                if (id === null) return; // Pengguna tekan batal
-                
-                const pw = prompt("KATA LALUAN:");
-                if (pw === null) return; // Pengguna tekan batal
-                
-                if (id.trim() === "admin123" && pw.trim() === "sekolah2024") {
-                    switchView('admin');
-                } else {
-                    alert("ID atau Kata Laluan Salah.");
-                }
-            } catch (e) {
-                console.error("Login Prompt Error:", e);
-                // Jika prompt gagal, guna fallback modal sederhana
-                const fallbackId = window.prompt("Sila masukkan ID:");
-                if(fallbackId === "admin123") switchView('admin');
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports'), {
+                    nama: document.getElementById('nama_program').value.toUpperCase(),
+                    tarikh: document.getElementById('tarikh').value,
+                    hari: document.getElementById('hari').value.toUpperCase(),
+                    tempat: document.getElementById('tempat').value.toUpperCase(),
+                    masa: document.getElementById('masa').value.toUpperCase(),
+                    objektif: document.getElementById('objektif').value.toUpperCase(),
+                    aktiviti: document.getElementById('aktiviti').value.toUpperCase(),
+                    imej: base64Images,
+                    timestamp: new Date().toISOString(),
+                    uid: currentUser.uid
+                });
+                alert("Laporan berjaya disimpan.");
+                document.getElementById('laporan-form').reset();
+                document.getElementById('preview-container').innerHTML = '';
+                base64Images = [];
+            } catch (err) { alert("Gagal menyimpan data."); }
+            finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
+                lucide.createIcons();
+            }
+        });
+
+        window.deleteReport = async (id) => {
+            if (confirm("Padam rekod ini?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
             }
         };
 
         function renderAdminTable(data) {
             const tbody = document.getElementById('admin-table-body');
             tbody.innerHTML = '';
-            
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">Tiada rekod dijumpai</td></tr>`;
-                return;
-            }
-
             data.sort((a,b) => b.timestamp.localeCompare(a.timestamp)).forEach(item => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-blue-50/30 transition text-sm";
@@ -307,8 +281,8 @@
                     <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
                     <td class="p-6 text-center">
                         <div class="flex justify-center space-x-2">
-                            <button onclick='generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100 transition" title="Lihat/Cetak"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                            <button onclick="deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition" title="Padam"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                            <button onclick='generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                            <button onclick="deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg"><i data-lucide="trash" class="w-4 h-4"></i></button>
                         </div>
                     </td>
                 `;
@@ -317,27 +291,15 @@
             lucide.createIcons();
         }
 
-        const imgInput = document.getElementById('gambar_upload');
-        imgInput.addEventListener('change', (e) => {
+        document.getElementById('gambar_upload').addEventListener('change', (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
             base64Images = [];
-            
-            const files = Array.from(e.target.files).slice(0, 4);
-            files.forEach(file => {
+            Array.from(e.target.files).slice(0, 4).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     base64Images.push(ev.target.result);
-                    const div = document.createElement('div');
-                    div.className = "relative group";
-                    div.innerHTML = `
-                        <img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">
-                        <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center rounded-xl transition">
-                            <i data-lucide="check-circle" class="text-white"></i>
-                        </div>
-                    `;
-                    preview.appendChild(div);
-                    lucide.createIcons();
+                    preview.innerHTML += `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">`;
                 };
                 reader.readAsDataURL(file);
             });
@@ -345,43 +307,24 @@
 
         window.generatePreview = (report) => {
             const area = document.getElementById('printable-area');
-            const gridCols = report.imej && report.imej.length > 1 ? 'grid-cols-2' : 'grid-cols-1';
-            
             area.innerHTML = `
-                <div class="flex justify-between border-b-4 border-slate-900 pb-6 mb-8">
+                <div class="flex justify-between border-b-4 border-slate-900 pb-6 mb-8 uppercase">
                     <img src="https://i.postimg.cc/SNmZtXqv/photo-2026-01-21-21-49-29.jpg" class="w-24 h-24">
-                    <div class="text-right uppercase">
+                    <div class="text-right">
                         <h1 class="text-xl font-black">SMA AL-MAHADUL ISLAMI</h1>
                         <p class="text-[10px] text-slate-500 font-bold">Laporan Digital Projek: MITAJ</p>
-                        <p class="text-[9px] text-slate-400">ID REKOD: ${report.id}</p>
                     </div>
                 </div>
                 <div class="bg-slate-50 p-6 rounded-2xl mb-8 uppercase text-sm border">
                     <p class="font-black text-blue-800 text-lg mb-2">${report.nama}</p>
-                    <p class="text-slate-600 font-bold">Tarikh: ${report.tarikh} (${report.hari})</p>
-                    <p class="text-slate-600 font-bold">Masa: ${report.masa} | Tempat: ${report.tempat}</p>
+                    <p class="text-slate-600 font-bold">Tarikh: ${report.tarikh} | Tempat: ${report.tempat}</p>
                 </div>
                 <div class="space-y-6 uppercase text-sm">
-                    <div>
-                        <p class="font-black border-l-4 border-blue-800 pl-2 mb-2 text-blue-900 tracking-wider">OBJEKTIF PROGRAM</p>
-                        <p class="text-slate-700 bg-slate-50/50 p-3 rounded-lg border border-slate-100">${report.objektif || 'TIADA MAKLUMAT'}</p>
+                    <div><p class="font-black border-l-4 border-blue-800 pl-2 mb-2">OBJEKTIF</p><p class="text-slate-700">${report.objektif}</p></div>
+                    <div><p class="font-black border-l-4 border-blue-800 pl-2 mb-2">LAPORAN AKTIVITI</p><p class="whitespace-pre-line text-slate-700">${report.aktiviti}</p></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${report.imej.map(img => `<img src="${img}" class="w-full h-48 object-cover rounded-xl border">`).join('')}
                     </div>
-                    <div>
-                        <p class="font-black border-l-4 border-blue-800 pl-2 mb-2 text-blue-900 tracking-wider">LAPORAN AKTIVITI</p>
-                        <p class="whitespace-pre-line text-slate-700 bg-slate-50/50 p-3 rounded-lg border border-slate-100">${report.aktiviti || 'TIADA MAKLUMAT'}</p>
-                    </div>
-                    <div>
-                        <p class="font-black border-l-4 border-blue-800 pl-2 mb-4 text-blue-900 tracking-wider">LAMPIRAN BERGAMBAR</p>
-                        ${report.imej && report.imej.length > 0 ? `
-                            <div class="grid ${gridCols} gap-4">
-                                ${report.imej.map(img => `<img src="${img}" class="w-full h-64 object-cover rounded-xl shadow-sm border-2 border-slate-100">`).join('')}
-                            </div>
-                        ` : `<p class="text-xs text-slate-400 italic">Tiada lampiran gambar disediakan.</p>`}
-                    </div>
-                </div>
-                <div class="mt-12 pt-8 border-t border-slate-100 flex justify-between items-end opacity-60">
-                    <div class="text-[9px] uppercase font-bold text-slate-400">Dicetak pada: ${new Date().toLocaleString('ms-MY')}</div>
-                    <div class="w-32 h-1 bg-slate-200"></div>
                 </div>
             `;
             document.getElementById('print-modal').classList.remove('hidden');
@@ -389,12 +332,8 @@
         };
 
         window.closePrintModal = () => document.getElementById('print-modal').classList.add('hidden');
-    </script>
-    <script>
-        // Inisialisasi ikon Lucide pada permulaan
-        window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
+        
+        window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
 </body>
 </html>
