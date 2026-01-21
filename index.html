@@ -36,7 +36,6 @@
     </style>
     
     <script>
-        // UI Navigation Logic
         function toggleLoginModal(show) {
             const modal = document.getElementById('login-modal');
             if (show) {
@@ -117,7 +116,6 @@
 
     <!-- Kandungan Utama -->
     <div id="main-content" class="container mx-auto px-4 py-10">
-        <!-- Dashboard View (Form) -->
         <div id="dashboard-view" class="max-w-4xl mx-auto">
             <div class="text-center mb-10 no-print">
                 <h1 class="text-4xl font-black text-slate-900 mb-2 tracking-tight uppercase">LAPORAN PROGRAM KO-KURIKULUM</h1>
@@ -161,6 +159,7 @@
                                         <div class="flex text-sm text-slate-600">
                                             <label for="gambar_upload" class="relative cursor-pointer font-bold text-blue-700 uppercase"><span>Muat naik fail</span><input id="gambar_upload" type="file" class="sr-only" accept="image/*" multiple></label>
                                         </div>
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase">Gambar akan dimampatkan secara automatik</p>
                                     </div>
                                 </div>
                                 <div id="preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
@@ -217,9 +216,6 @@
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // ==========================================
-        // KONFIGURASI FIREBASE BARU ANDA (KEMAS KINI)
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDxpft3kJkjTiBNLujEeDAYuE6qRBwIfgM",
             authDomain: "smami-koko-digital.firebaseapp.com",
@@ -231,10 +227,9 @@
         };
 
         let db, auth;
-        const appId = 'smami-digital-koko-v1'; // ID unik untuk koleksi anda
+        const appId = 'smami-digital-koko-v1';
         let base64Images = [];
 
-        // UI Status Indicator
         const updateStatus = (status) => {
             const dot = document.getElementById('status-dot');
             const txt = document.getElementById('status-text');
@@ -260,27 +255,20 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Authentication Flow
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         updateStatus('online');
                         startRealtimeSync();
                     } else {
-                        signInAnonymously(auth).catch(e => {
-                            console.error("Auth failed:", e);
-                            updateStatus('offline');
-                        });
+                        signInAnonymously(auth).catch(e => updateStatus('offline'));
                     }
                 });
             } catch (err) {
-                console.error("Firebase init error:", err);
                 updateStatus('offline');
             }
         }
 
-        // Realtime Data Listener
         function startRealtimeSync() {
-            // Mengikut struktur Rule 1: /artifacts/{appId}/public/data/{collectionName}
             const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
             onSnapshot(collectionPath, (snapshot) => {
                 const reports = [];
@@ -288,7 +276,6 @@
                 renderTable(reports);
                 document.getElementById('loading-table').classList.add('hidden');
             }, (error) => {
-                console.error("Sync error:", error);
                 updateStatus('offline');
             });
         }
@@ -296,7 +283,6 @@
         function renderTable(list) {
             const tbody = document.getElementById('admin-table-body');
             tbody.innerHTML = '';
-            // Susun mengikut tarikh terbaru (sort dalam JS mematuhi Rule 2)
             list.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
@@ -316,7 +302,6 @@
             lucide.createIcons();
         }
 
-        // Global Handlers
         window.viewReport = (data) => {
             const area = document.getElementById('printable-area');
             area.innerHTML = `
@@ -362,12 +347,44 @@
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', id);
                     await deleteDoc(docRef);
                 } catch (e) {
-                    alert("Ralat memadam: Pastikan anda online.");
+                    alert("Ralat memadam.");
                 }
             }
         };
 
-        // Form Submission Logic
+        // FUNGSI BARU: Pemampat Gambar (Resize & Compress)
+        async function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Kecilkan dimensi jika terlalu besar (Max 800px lebar)
+                        const MAX_WIDTH = 800;
+                        if (width > MAX_WIDTH) {
+                            height = (MAX_WIDTH / width) * height;
+                            width = MAX_WIDTH;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Simpan sebagai JPEG berkualiti rendah (0.6) untuk saiz fail kecil
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        resolve(dataUrl);
+                    };
+                };
+            });
+        }
+
         document.getElementById('laporan-form').onsubmit = async (e) => {
             e.preventDefault();
             if (!auth.currentUser) return alert("Sila tunggu sambungan sistem...");
@@ -397,7 +414,11 @@
                 window.scrollTo(0,0);
             } catch (err) {
                 console.error(err);
-                alert("Gagal menyimpan. Sila semak Firestore Rules anda di Console.");
+                if (err.message.includes("longer than 1048487 bytes")) {
+                    alert("Ralat: Saiz gambar masih terlalu besar walaupun telah dimampatkan. Sila muat naik kurang dari 4 gambar atau gunakan gambar yang lebih kecil.");
+                } else {
+                    alert("Gagal menyimpan. Sila semak Firestore Rules.");
+                }
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
@@ -405,26 +426,27 @@
             }
         };
 
-        // Handling Images
-        document.getElementById('gambar_upload').onchange = (e) => {
+        document.getElementById('gambar_upload').onchange = async (e) => {
             const preview = document.getElementById('preview-container');
-            preview.innerHTML = '';
+            preview.innerHTML = `<div class="col-span-4 text-center py-4 text-xs font-bold text-blue-600 animate-pulse">MEMPROSES GAMBAR...</div>`;
             base64Images = [];
             
-            Array.from(e.target.files).slice(0,4).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    base64Images.push(ev.target.result);
-                    const div = document.createElement('div');
-                    div.className = "relative group";
-                    div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200 shadow-sm">`;
-                    preview.appendChild(div);
-                };
-                reader.readAsDataURL(file);
+            const files = Array.from(e.target.files).slice(0,4);
+            
+            for (const file of files) {
+                const compressedBase64 = await compressImage(file);
+                base64Images.push(compressedBase64);
+            }
+
+            preview.innerHTML = '';
+            base64Images.forEach(imgData => {
+                const div = document.createElement('div');
+                div.className = "relative group";
+                div.innerHTML = `<img src="${imgData}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200 shadow-sm">`;
+                preview.appendChild(div);
             });
         };
 
-        // Admin Access
         document.getElementById('modal-submit-btn').onclick = () => {
             const id = document.getElementById('admin-id').value;
             const pw = document.getElementById('admin-pw').value;
@@ -436,7 +458,6 @@
             }
         };
 
-        // Initialize
         initFirebase();
         window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
