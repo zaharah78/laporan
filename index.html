@@ -36,6 +36,7 @@
     </style>
     
     <script>
+        // Logik UI Asas (Sentiasa Berfungsi)
         function toggleLoginModal(show) {
             const modal = document.getElementById('login-modal');
             if (show) {
@@ -82,10 +83,10 @@
                         <span class="text-sm font-bold uppercase">PENTADBIR</span>
                     </button>
                 </div>
-                <!-- Firebase Connection Status -->
+                <!-- Firebase Status Indicator -->
                 <div id="db-status-container" class="flex items-center opacity-70">
                     <span id="status-dot" class="status-dot status-offline"></span>
-                    <span id="status-text" class="text-[9px] font-bold uppercase tracking-tighter text-red-300">DISCONNECTED</span>
+                    <span id="status-text" class="text-[9px] font-bold uppercase tracking-tighter text-red-300">TIADA SAMBUNGAN</span>
                 </div>
             </div>
         </div>
@@ -119,7 +120,7 @@
 
     <!-- Kandungan Utama -->
     <div id="main-content" class="container mx-auto px-4 py-10">
-        <!-- View Borang Laporan -->
+        <!-- Dashboard View (Form) -->
         <div id="dashboard-view" class="max-w-4xl mx-auto">
             <div class="text-center mb-10 no-print">
                 <h1 class="text-4xl font-black text-slate-900 mb-2 tracking-tight uppercase">LAPORAN PROGRAM KO-KURIKULUM</h1>
@@ -177,7 +178,7 @@
             </div>
         </div>
 
-        <!-- View Pentadbir -->
+        <!-- Admin View -->
         <div id="admin-view" class="hidden max-w-6xl mx-auto">
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
                 <div class="p-8 border-b flex flex-col md:flex-row justify-between items-center bg-slate-50/50 gap-4">
@@ -203,7 +204,7 @@
         </div>
     </div>
 
-    <!-- Modal Cetakan -->
+    <!-- Print Modal -->
     <div id="print-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
         <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200">
             <div id="printable-area" class="bg-white p-12 leading-relaxed text-slate-900"></div>
@@ -214,6 +215,7 @@
         </div>
     </div>
 
+    <!-- FIREBASE INTEGRATION -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -221,100 +223,78 @@
 
         // Global State
         let db, auth;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'laporan-koko-mitaj-web';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'laporan-koko-smami';
         let base64Images = [];
 
-        // UI Status Helper
-        const updateStatus = (mode) => {
+        // UI Feedback
+        const updateUIStatus = (status) => {
             const dot = document.getElementById('status-dot');
             const txt = document.getElementById('status-text');
-            
-            if (mode === 'online') {
+            if (status === 'online') {
                 dot.className = "status-dot status-online";
-                txt.innerText = "CONNECTED";
+                txt.innerText = "SISTEM ONLINE";
                 txt.className = "text-[9px] font-bold uppercase tracking-tighter text-green-400";
-            } else if (mode === 'pending') {
+            } else if (status === 'pending') {
                 dot.className = "status-dot status-pending";
-                txt.innerText = "CONNECTING...";
+                txt.innerText = "MENYAMBUNG...";
                 txt.className = "text-[9px] font-bold uppercase tracking-tighter text-amber-400";
             } else {
                 dot.className = "status-dot status-offline";
-                txt.innerText = "DISCONNECTED";
+                txt.innerText = "TIADA SAMBUNGAN";
                 txt.className = "text-[9px] font-bold uppercase tracking-tighter text-red-400";
             }
         };
 
-        // Initialize Firebase
-        try {
-            updateStatus('pending');
-            const firebaseConfig = JSON.parse(__firebase_config);
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
+        // Initialize Firebase with explicit error handling
+        const initFirebase = async () => {
+            try {
+                updateUIStatus('pending');
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
 
-            // Auth Logic with exponential backoff/retry
-            const attemptSignIn = async (retries = 3) => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
+                // Auth Listener
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log("Authenticated as:", user.uid);
+                        updateUIStatus('online');
+                        startSync();
                     } else {
-                        await signInAnonymously(auth);
+                        updateUIStatus('offline');
                     }
-                } catch (err) {
-                    if (retries > 0) {
-                        setTimeout(() => attemptSignIn(retries - 1), 2000);
-                    } else {
-                        console.error("Auth failed after retries");
-                        updateStatus('offline');
-                    }
-                }
-            };
+                });
 
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    updateStatus('online');
-                    loadData();
+                // Trigger Sign In
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    updateStatus('offline');
+                    await signInAnonymously(auth);
                 }
-            });
 
-            attemptSignIn();
-        } catch (e) {
-            console.error("Firebase startup error:", e);
-            updateStatus('offline');
-        }
-
-        // Login Submit
-        document.getElementById('modal-submit-btn').addEventListener('click', () => {
-            const id = document.getElementById('admin-id').value;
-            const pw = document.getElementById('admin-pw').value;
-            if (id.toLowerCase() === "admin" && pw === "sekolah2024") {
-                toggleLoginModal(false);
-                switchAppView('admin');
-            } else {
-                alert("ID atau Kata Laluan Salah!");
+            } catch (err) {
+                console.error("Firebase Setup Error:", err);
+                updateUIStatus('offline');
+                // Auto-retry after 5 seconds if critical
+                setTimeout(initFirebase, 5000);
             }
-        });
+        };
 
-        // Load Data from Firestore
-        function loadData() {
-            if (!auth.currentUser) return;
-            const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
-            
-            onSnapshot(reportsRef, (snap) => {
-                const data = [];
-                snap.forEach(d => data.push({id: d.id, ...d.data()}));
-                renderTable(data);
+        // Real-time Data Sync
+        const startSync = () => {
+            const path = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
+            onSnapshot(path, (snap) => {
+                const items = [];
+                snap.forEach(d => items.push({id: d.id, ...d.data()}));
+                renderTable(items);
                 document.getElementById('loading-table').classList.add('hidden');
-                updateStatus('online'); // Confirm online after data fetch
             }, (err) => {
-                console.error("Firestore access error:", err);
-                updateStatus('offline');
+                console.error("Sync Error:", err);
+                updateUIStatus('offline');
             });
-        }
+        };
 
-        // Render Table
+        // Render functions
         function renderTable(data) {
             const tbody = document.getElementById('admin-table-body');
             tbody.innerHTML = '';
@@ -337,10 +317,10 @@
             lucide.createIcons();
         }
 
-        // Save Form
+        // Form Submission
         document.getElementById('laporan-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!auth.currentUser) return alert("Sila pastikan sambungan stabil (CONNECTED).");
+            if (!auth.currentUser) return alert("Sila tunggu sambungan sistem (SISTEM ONLINE).");
 
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
@@ -363,7 +343,7 @@
                 document.getElementById('preview-container').innerHTML = '';
                 base64Images = [];
             } catch (err) {
-                alert("Gagal menyimpan. Sila periksa sambungan internet anda.");
+                alert("Gagal menyimpan. Sila pastikan sambungan internet aktif.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
@@ -371,7 +351,7 @@
             }
         });
 
-        // Global functions for table buttons
+        // Global Handlers
         window.viewReport = (report) => {
             const area = document.getElementById('printable-area');
             area.innerHTML = `
@@ -410,7 +390,19 @@
             }
         };
 
-        // File upload
+        // Admin Login
+        document.getElementById('modal-submit-btn').addEventListener('click', () => {
+            const id = document.getElementById('admin-id').value;
+            const pw = document.getElementById('admin-pw').value;
+            if (id.toLowerCase() === "admin" && pw === "sekolah2024") {
+                toggleLoginModal(false);
+                switchAppView('admin');
+            } else {
+                alert("ID atau Kata Laluan Salah!");
+            }
+        });
+
+        // Image Handling
         document.getElementById('gambar_upload').addEventListener('change', (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
@@ -427,6 +419,8 @@
             });
         });
 
+        // Run Init
+        initFirebase();
         window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
 </body>
