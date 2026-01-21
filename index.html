@@ -13,31 +13,51 @@
         .glass-nav { background: rgba(29, 78, 216, 0.95); backdrop-filter: blur(10px); }
         @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
         
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .status-online { background-color: #10b981; box-shadow: 0 0 10px #10b981; }
-        .status-offline { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
-        .status-pending { background-color: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #1d4ed8;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .modal-enter { animation: modalIn 0.3s ease-out forwards; }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+        .status-offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .status-pending { background-color: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
     </style>
+    
     <script>
+        // Logik UI Asas (Sentiasa Berfungsi)
         function toggleLoginModal(show) {
             const modal = document.getElementById('login-modal');
-            if (modal) {
-                if (show) modal.classList.remove('hidden');
-                else modal.classList.add('hidden');
+            if (show) {
+                modal.classList.remove('hidden');
+                document.getElementById('admin-id').focus();
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('admin-id').value = '';
+                document.getElementById('admin-pw').value = '';
             }
         }
 
         function switchAppView(view) {
             const dashboard = document.getElementById('dashboard-view');
             const admin = document.getElementById('admin-view');
-            if (dashboard && admin) {
-                if (view === 'admin') {
-                    dashboard.classList.add('hidden');
-                    admin.classList.remove('hidden');
-                } else {
-                    admin.classList.add('hidden');
-                    dashboard.classList.remove('hidden');
-                }
+            if (view === 'admin') {
+                dashboard.classList.add('hidden');
+                admin.classList.remove('hidden');
+            } else {
+                admin.classList.add('hidden');
+                dashboard.classList.remove('hidden');
             }
             window.scrollTo(0,0);
         }
@@ -45,6 +65,7 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900">
 
+    <!-- Navigasi Utama -->
     <nav class="glass-nav text-white shadow-xl sticky top-0 z-40 no-print">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4 cursor-pointer" onclick="location.reload()">
@@ -62,221 +83,233 @@
                         <span class="text-sm font-bold uppercase">PENTADBIR</span>
                     </button>
                 </div>
-                <div id="db-status-container" class="flex items-center bg-black/20 px-3 py-1 rounded-full border border-white/10">
+                <!-- Firebase Status Indicator -->
+                <div id="db-status-container" class="flex items-center opacity-70">
                     <span id="status-dot" class="status-dot status-offline"></span>
-                    <span id="status-text" class="text-[10px] font-black uppercase tracking-wider text-red-300">OFFLINE</span>
+                    <span id="status-text" class="text-[9px] font-bold uppercase tracking-tighter text-red-300">TIADA SAMBUNGAN</span>
                 </div>
             </div>
         </div>
     </nav>
 
+    <!-- MODAL LOG MASUK -->
+    <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden border border-slate-200 modal-enter">
+            <div class="p-8">
+                <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="shield-check" class="w-8 h-8 text-blue-800"></i>
+                </div>
+                <h3 class="text-center text-xl font-black text-slate-900 mb-2 uppercase">LOG MASUK ADMIN</h3>
+                <p class="text-center text-xs text-slate-500 mb-8 font-bold uppercase tracking-widest">Sila masukkan ID & Kata Laluan</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">ID Pengguna</label>
+                        <input type="text" id="admin-id" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition uppercase text-sm font-bold" placeholder="ID ANDA">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">Kata Laluan</label>
+                        <input type="password" id="admin-pw" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm font-bold" placeholder="••••••••">
+                    </div>
+                    <button id="modal-submit-btn" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-900 transition mt-4 uppercase tracking-wider">MASUK SISTEM</button>
+                    <button onclick="toggleLoginModal(false)" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kandungan Utama -->
     <div id="main-content" class="container mx-auto px-4 py-10">
+        <!-- Dashboard View (Form) -->
         <div id="dashboard-view" class="max-w-4xl mx-auto">
             <div class="text-center mb-10 no-print">
                 <h1 class="text-4xl font-black text-slate-900 mb-2 tracking-tight uppercase">LAPORAN PROGRAM KO-KURIKULUM</h1>
-                <p class="text-slate-500 font-medium uppercase text-xs tracking-[0.2em]">Sistem Digital SMA Al-Mahadul Islami</p>
+                <p class="text-slate-500 font-medium uppercase text-xs tracking-[0.2em]">Borang Digital Pengurusan Aktiviti</p>
             </div>
 
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+                <div class="bg-blue-800 p-1 no-print"></div> 
                 <div class="p-8 md:p-12">
                     <form id="laporan-form" class="space-y-8">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Nama Program / Unit</label>
-                                <input type="text" id="nama_program" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase text-sm focus:ring-2 focus:ring-blue-500 transition">
+                        <div class="space-y-6">
+                            <div class="flex items-center space-x-2 text-blue-800 font-bold uppercase text-xs tracking-wider">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                                <span>MAKLUMAT ASAS PROGRAM</span>
                             </div>
-                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tarikh</label><input type="date" id="tarikh" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition"></div>
-                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tempat</label><input type="text" id="tempat" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl uppercase text-sm focus:ring-2 focus:ring-blue-500 transition"></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Nama Program / Unit</label>
+                                    <input type="text" id="nama_program" placeholder="CONTOH: KELAB ROBOTIK" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase text-sm focus:ring-2 focus:ring-blue-500 transition">
+                                </div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tarikh</label><input type="date" id="tarikh" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition"></div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Hari</label>
+                                    <select id="hari" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition">
+                                        <option>ISNIN</option><option>SELASA</option><option>RABU</option><option>KHAMIS</option><option>JUMAAT</option><option>SABTU</option><option>AHAD</option>
+                                    </select>
+                                </div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tempat</label><input type="text" id="tempat" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl uppercase text-sm focus:ring-2 focus:ring-blue-500 transition"></div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Masa</label><input type="text" id="masa" placeholder="CONTOH: 2.00 - 4.00 PETANG" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl uppercase text-sm focus:ring-2 focus:ring-blue-500 transition"></div>
+                            </div>
                         </div>
-                        <div class="space-y-4">
-                            <label class="block text-sm font-bold text-slate-700 uppercase">Laporan Aktiviti</label>
-                            <textarea id="aktiviti" rows="5" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition"></textarea>
+
+                        <div class="space-y-6 pt-4">
+                            <div class="flex items-center space-x-2 text-blue-800 font-bold uppercase text-xs tracking-wider"><i data-lucide="align-left" class="w-4 h-4"></i><span>PERINCIAN AKTIVITI</span></div>
+                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Objektif</label><textarea id="objektif" rows="2" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition" placeholder="NYATAKAN OBJEKTIF PROGRAM..."></textarea></div>
+                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Laporan Aktiviti</label><textarea id="aktiviti" rows="5" placeholder="NYATAKAN RINGKASAN AKTIVITI YANG DIJALANKAN..." class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition"></textarea></div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Gambar (Maksimum 4)</label>
+                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-200 border-dashed rounded-xl bg-slate-50 hover:bg-slate-100 transition cursor-pointer relative">
+                                    <div class="space-y-1 text-center">
+                                        <i data-lucide="image" class="mx-auto h-12 w-12 text-slate-400"></i>
+                                        <div class="flex text-sm text-slate-600">
+                                            <label for="gambar_upload" class="relative cursor-pointer font-bold text-blue-700 uppercase"><span>Muat naik fail</span><input id="gambar_upload" type="file" class="sr-only" accept="image/*" multiple></label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
+                            </div>
                         </div>
-                        <div class="space-y-4">
-                            <label class="block text-sm font-bold text-slate-700 uppercase">Gambar (Maks 4)</label>
-                            <input type="file" id="gambar_upload" accept="image/*" multiple class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            <div id="preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
-                        </div>
-                        <button type="submit" id="btn-submit" class="w-full bg-blue-800 text-white font-black py-5 rounded-xl shadow-lg flex justify-center items-center text-xl uppercase tracking-wide hover:bg-blue-900 transition">
-                            SIMPAN LAPORAN
+
+                        <button type="submit" id="btn-submit" class="w-full bg-blue-800 text-white font-black py-5 rounded-xl shadow-lg flex justify-center items-center text-xl uppercase tracking-wide hover:bg-blue-900 transition active:scale-[0.98]">
+                            <i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan
                         </button>
                     </form>
                 </div>
             </div>
         </div>
 
+        <!-- Admin View -->
         <div id="admin-view" class="hidden max-w-6xl mx-auto">
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                <div class="p-8 border-b flex justify-between items-center bg-slate-50/50">
-                    <h2 class="text-2xl font-black text-slate-900 uppercase">ARKIB LAPORAN</h2>
-                    <button onclick="switchAppView('dashboard')" class="px-4 py-2 bg-white border rounded-lg font-bold text-xs uppercase">Tutup</button>
+                <div class="p-8 border-b flex flex-col md:flex-row justify-between items-center bg-slate-50/50 gap-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-900 uppercase">ARKIB LAPORAN DIGITAL</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Senarai semua aktiviti yang telah direkodkan</p>
+                    </div>
+                    <button onclick="switchAppView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition flex items-center">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
+                    </button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead class="bg-slate-50 text-[10px] uppercase font-black"><tr class="border-b"><th class="p-6">Tarikh</th><th class="p-6">Program</th><th class="p-6">Tempat</th><th class="p-6 text-center">Aksi</th></tr></thead>
+                        <thead><tr class="bg-slate-50 text-[10px] uppercase tracking-widest font-black"><th class="p-6">Tarikh</th><th class="p-6">Program</th><th class="p-6">Tempat</th><th class="p-6 text-center">Tindakan</th></tr></thead>
                         <tbody id="admin-table-body" class="divide-y"></tbody>
                     </table>
+                </div>
+                <div id="loading-table" class="text-center py-20 flex flex-col items-center justify-center space-y-3">
+                    <div class="loader"></div>
+                    <span class="uppercase text-xs font-bold text-slate-400 tracking-widest">Memuatkan data...</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4">
-        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 border border-slate-200">
-            <h3 class="text-center text-xl font-black text-slate-900 mb-6 uppercase">LOG MASUK ADMIN</h3>
-            <div class="space-y-4">
-                <input type="text" id="admin-id" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase text-sm font-bold" placeholder="ID PENGGUNA">
-                <input type="password" id="admin-pw" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" placeholder="KATA LALUAN">
-                <button id="modal-submit-btn" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg uppercase">MASUK</button>
-                <button onclick="toggleLoginModal(false)" class="w-full text-slate-400 font-bold py-2 text-xs uppercase">BATAL</button>
+    <!-- Print Modal -->
+    <div id="print-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200">
+            <div id="printable-area" class="bg-white p-12 leading-relaxed text-slate-900"></div>
+            <div class="bg-slate-50 p-6 flex justify-end space-x-4 border-t sticky bottom-0">
+                <button onclick="document.getElementById('print-modal').classList.add('hidden')" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
+                <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide shadow-lg">Cetak Laporan</button>
             </div>
         </div>
     </div>
 
+    <!-- FIREBASE INTEGRATION -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, enableNetwork, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+        // Global State
         let db, auth;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'koko-smami-2024';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'laporan-koko-smami';
         let base64Images = [];
 
-        // Menetapkan status sambungan secara visual
-        const updateStatus = (status) => {
+        // UI Feedback
+        const updateUIStatus = (status) => {
             const dot = document.getElementById('status-dot');
             const txt = document.getElementById('status-text');
-            if (!dot || !txt) return;
-
             if (status === 'online') {
                 dot.className = "status-dot status-online";
                 txt.innerText = "SISTEM ONLINE";
-                txt.className = "text-[10px] font-black uppercase tracking-wider text-green-400";
+                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-green-400";
             } else if (status === 'pending') {
                 dot.className = "status-dot status-pending";
                 txt.innerText = "MENYAMBUNG...";
-                txt.className = "text-[10px] font-black uppercase tracking-wider text-amber-400";
+                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-amber-400";
             } else {
                 dot.className = "status-dot status-offline";
-                txt.innerText = "SISTEM OFFLINE";
-                txt.className = "text-[10px] font-black uppercase tracking-wider text-red-400";
+                txt.innerText = "TIADA SAMBUNGAN";
+                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-red-400";
             }
         };
 
-        const startFirebase = async () => {
+        // Initialize Firebase with explicit error handling
+        const initFirebase = async () => {
             try {
-                updateStatus('pending');
+                updateUIStatus('pending');
                 const firebaseConfig = JSON.parse(__firebase_config);
-                
-                // Inisialisasi Firebase App
                 const app = initializeApp(firebaseConfig);
-                
-                // Inisialisasi Firestore dengan Cache Tempatan (Penting untuk kestabilan iframe)
-                db = initializeFirestore(app, {
-                    localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
-                });
-                
+                db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Paksa rangkaian aktif
-                await enableNetwork(db).catch(err => console.warn("Enable network fail:", err));
-
-                // Pantau status log masuk
-                onAuthStateChanged(auth, async (user) => {
+                // Auth Listener
+                onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        console.log("Pengguna dikesan:", user.uid);
-                        updateStatus('online');
-                        syncData();
+                        console.log("Authenticated as:", user.uid);
+                        updateUIStatus('online');
+                        startSync();
                     } else {
-                        await performLogin();
+                        updateUIStatus('offline');
                     }
                 });
 
-            } catch (err) {
-                console.error("Firebase Initialization Error:", err);
-                updateStatus('offline');
-                // Cuba semula jika gagal inisialisasi
-                setTimeout(startFirebase, 5000);
-            }
-        };
-
-        const performLogin = async () => {
-            try {
+                // Trigger Sign In
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (e) {
-                console.error("Authentication failed:", e);
-                updateStatus('offline');
+
+            } catch (err) {
+                console.error("Firebase Setup Error:", err);
+                updateUIStatus('offline');
+                // Auto-retry after 5 seconds if critical
+                setTimeout(initFirebase, 5000);
             }
         };
 
-        const syncData = () => {
-            // Menggunakan struktur path yang betul bagi artifacts
-            const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
-            
-            // Dengar perubahan data secara real-time
-            onSnapshot(colRef, (snap) => {
-                const list = [];
-                snap.forEach(d => list.push({id: d.id, ...d.data()}));
-                renderTable(list);
-                updateStatus('online');
+        // Real-time Data Sync
+        const startSync = () => {
+            const path = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
+            onSnapshot(path, (snap) => {
+                const items = [];
+                snap.forEach(d => items.push({id: d.id, ...d.data()}));
+                renderTable(items);
+                document.getElementById('loading-table').classList.add('hidden');
             }, (err) => {
-                console.error("Firestore sync error:", err);
-                // Jika ralat disebabkan oleh tiada talian, jangan terus tukar status kepada offline jika data masih ada di cache
-                if (!navigator.onLine) updateStatus('offline');
+                console.error("Sync Error:", err);
+                updateUIStatus('offline');
             });
         };
 
-        // Menguruskan penghantaran borang
-        document.getElementById('laporan-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-submit');
-            btn.disabled = true;
-            btn.innerText = "SEDANG MENYIMPAN...";
-
-            try {
-                // Simpan ke Firestore (akan berjaya di cache lokal dahulu jika offline)
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports'), {
-                    nama: document.getElementById('nama_program').value.toUpperCase(),
-                    tarikh: document.getElementById('tarikh').value,
-                    tempat: document.getElementById('tempat').value.toUpperCase(),
-                    aktiviti: document.getElementById('aktiviti').value.toUpperCase(),
-                    imej: base64Images,
-                    timestamp: new Date().toISOString()
-                });
-                
-                alert("Laporan telah disimpan! Ia akan dihantar ke pelayan secara automatik.");
-                document.getElementById('laporan-form').reset();
-                document.getElementById('preview-container').innerHTML = '';
-                base64Images = [];
-            } catch (err) {
-                console.error("Submission failed:", err);
-                alert("Gagal menyimpan laporan. Sila periksa sambungan internet anda.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "SIMPAN LAPORAN";
-            }
-        });
-
+        // Render functions
         function renderTable(data) {
             const tbody = document.getElementById('admin-table-body');
-            if (!tbody) return;
             tbody.innerHTML = '';
-            // Susun mengikut tarikh terbaru
             data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition";
+                tr.className = "hover:bg-blue-50/30 transition text-sm";
                 tr.innerHTML = `
-                    <td class="p-6 font-bold text-xs">${item.tarikh}</td>
-                    <td class="p-6 font-black text-blue-900 text-sm uppercase">${item.nama}</td>
-                    <td class="p-6 text-slate-500 text-xs uppercase">${item.tempat}</td>
+                    <td class="p-6 font-bold text-slate-700">${item.tarikh}</td>
+                    <td class="p-6 font-black text-blue-900 uppercase text-[11px] leading-tight">${item.nama}</td>
+                    <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
                     <td class="p-6 text-center">
-                        <button onclick="window.delDoc('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
+                        <div class="flex justify-center space-x-2">
+                            <button onclick='window.viewReport(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                            <button onclick="window.delReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -284,18 +317,80 @@
             lucide.createIcons();
         }
 
-        // Fungsi padam laporan (global supaya butang dalam string HTML boleh panggil)
-        window.delDoc = async (id) => {
+        // Form Submission
+        document.getElementById('laporan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser) return alert("Sila tunggu sambungan sistem (SISTEM ONLINE).");
+
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerHTML = `<div class="loader mr-3"></div> MENYIMPAN...`;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports'), {
+                    nama: document.getElementById('nama_program').value.toUpperCase(),
+                    tarikh: document.getElementById('tarikh').value,
+                    hari: document.getElementById('hari').value.toUpperCase(),
+                    tempat: document.getElementById('tempat').value.toUpperCase(),
+                    masa: document.getElementById('masa').value.toUpperCase(),
+                    objektif: document.getElementById('objektif').value.toUpperCase(),
+                    aktiviti: document.getElementById('aktiviti').value.toUpperCase(),
+                    imej: base64Images,
+                    timestamp: new Date().toISOString()
+                });
+                alert("Laporan Berjaya Disimpan!");
+                document.getElementById('laporan-form').reset();
+                document.getElementById('preview-container').innerHTML = '';
+                base64Images = [];
+            } catch (err) {
+                alert("Gagal menyimpan. Sila pastikan sambungan internet aktif.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
+                lucide.createIcons();
+            }
+        });
+
+        // Global Handlers
+        window.viewReport = (report) => {
+            const area = document.getElementById('printable-area');
+            area.innerHTML = `
+                <div class="flex justify-between items-center border-b-4 border-slate-900 pb-6 mb-8 uppercase">
+                    <img src="https://i.postimg.cc/SNmZtXqv/photo-2026-01-21-21-49-29.jpg" class="w-24 h-24 object-contain">
+                    <div class="text-right">
+                        <h1 class="text-xl font-black">SMA AL-MAHADUL ISLAMI</h1>
+                        <p class="text-xs font-bold text-slate-600">Laporan Aktiviti Kokurikulum Digital</p>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-6 rounded-2xl border mb-8 uppercase">
+                    <p class="text-[10px] font-black text-blue-800 mb-1 tracking-widest">NAMA PROGRAM / UNIT</p>
+                    <p class="font-black text-xl text-slate-900">${report.nama}</p>
+                    <p class="text-sm font-bold mt-2">${report.tarikh} (${report.hari})</p>
+                </div>
+                <div class="space-y-6 uppercase text-sm">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="font-black text-blue-800 mb-1">TEMPAT</p><p class="p-3 bg-white border rounded-lg">${report.tempat}</p></div>
+                        <div><p class="font-black text-blue-800 mb-1">MASA</p><p class="p-3 bg-white border rounded-lg">${report.masa}</p></div>
+                    </div>
+                    <div><p class="font-black text-blue-800 mb-1">OBJEKTIF</p><div class="p-4 bg-white border rounded-xl text-slate-600 min-h-[50px]">${report.objektif || 'TIADA'}</div></div>
+                    <div><p class="font-black text-blue-800 mb-1">LAPORAN AKTIVITI</p><div class="p-4 bg-white border rounded-xl text-slate-700 whitespace-pre-line min-h-[150px]">${report.aktiviti}</div></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${(report.imej || []).map(img => `<img src="${img}" class="w-full h-52 object-cover rounded-xl border">`).join('')}
+                    </div>
+                </div>
+            `;
+            document.getElementById('print-modal').classList.remove('hidden');
+        };
+
+        window.delReport = async (id) => {
             if (confirm("Padam laporan ini secara kekal?")) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
-                } catch (e) {
-                    alert("Ralat memadam data.");
-                }
+                } catch (e) { alert("Ralat semasa memadam."); }
             }
         };
 
-        // Log masuk Pentadbir
+        // Admin Login
         document.getElementById('modal-submit-btn').addEventListener('click', () => {
             const id = document.getElementById('admin-id').value;
             const pw = document.getElementById('admin-pw').value;
@@ -303,34 +398,29 @@
                 toggleLoginModal(false);
                 switchAppView('admin');
             } else {
-                alert("ID Pengguna atau Kata Laluan salah!");
+                alert("ID atau Kata Laluan Salah!");
             }
         });
 
-        // Pratonton imej
+        // Image Handling
         document.getElementById('gambar_upload').addEventListener('change', (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
             base64Images = [];
-            Array.from(e.target.files).slice(0, 4).forEach(file => {
-                if (file.size > 1024 * 1024) { // Had 1MB untuk base64 optimization
-                    alert("Imej " + file.name + " terlalu besar. Sila gunakan imej bawah 1MB.");
-                    return;
-                }
+            Array.from(e.target.files).slice(0,4).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     base64Images.push(ev.target.result);
                     const div = document.createElement('div');
-                    div.className = "relative group";
-                    div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-100 shadow-sm">`;
+                    div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200 shadow-sm">`;
                     preview.appendChild(div);
                 };
                 reader.readAsDataURL(file);
             });
         });
 
-        // Jalankan permulaan
-        startFirebase();
+        // Run Init
+        initFirebase();
         window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
 </body>
