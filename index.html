@@ -13,22 +13,6 @@
         .glass-nav { background: rgba(29, 78, 216, 0.95); backdrop-filter: blur(10px); }
         @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
         
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #1d4ed8;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .modal-enter { animation: modalIn 0.3s ease-out forwards; }
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95) translateY(-20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
         .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .status-online { background-color: #10b981; box-shadow: 0 0 10px #10b981; }
         .status-offline { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
@@ -38,11 +22,8 @@
         function toggleLoginModal(show) {
             const modal = document.getElementById('login-modal');
             if (modal) {
-                if (show) {
-                    modal.classList.remove('hidden');
-                } else {
-                    modal.classList.add('hidden');
-                }
+                if (show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
             }
         }
 
@@ -60,14 +41,10 @@
             }
             window.scrollTo(0,0);
         }
-
-        window.toggleLoginModal = toggleLoginModal;
-        window.switchAppView = switchAppView;
     </script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900">
 
-    <!-- Navigasi Utama -->
     <nav class="glass-nav text-white shadow-xl sticky top-0 z-40 no-print">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4 cursor-pointer" onclick="location.reload()">
@@ -85,7 +62,6 @@
                         <span class="text-sm font-bold uppercase">PENTADBIR</span>
                     </button>
                 </div>
-                <!-- Status Sambungan Real-time -->
                 <div id="db-status-container" class="flex items-center bg-black/20 px-3 py-1 rounded-full border border-white/10">
                     <span id="status-dot" class="status-dot status-offline"></span>
                     <span id="status-text" class="text-[10px] font-black uppercase tracking-wider text-red-300">OFFLINE</span>
@@ -94,7 +70,6 @@
         </div>
     </nav>
 
-    <!-- UI Borang & Arkib -->
     <div id="main-content" class="container mx-auto px-4 py-10">
         <div id="dashboard-view" class="max-w-4xl mx-auto">
             <div class="text-center mb-10 no-print">
@@ -146,7 +121,6 @@
         </div>
     </div>
 
-    <!-- Login Modal -->
     <div id="login-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center z-[100] p-4">
         <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 border border-slate-200">
             <h3 class="text-center text-xl font-black text-slate-900 mb-6 uppercase">LOG MASUK ADMIN</h3>
@@ -161,13 +135,14 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, enableNetwork } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, enableNetwork, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         let db, auth;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'koko-smami-2024';
         let base64Images = [];
 
+        // Menetapkan status sambungan secara visual
         const updateStatus = (status) => {
             const dot = document.getElementById('status-dot');
             const txt = document.getElementById('status-text');
@@ -192,28 +167,35 @@
             try {
                 updateStatus('pending');
                 const firebaseConfig = JSON.parse(__firebase_config);
+                
+                // Inisialisasi Firebase App
                 const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
+                
+                // Inisialisasi Firestore dengan Cache Tempatan (Penting untuk kestabilan iframe)
+                db = initializeFirestore(app, {
+                    localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+                });
+                
                 auth = getAuth(app);
 
-                // Paksa rangkaian untuk menyambung (Penting untuk iframe/deploy)
-                await enableNetwork(db);
+                // Paksa rangkaian aktif
+                await enableNetwork(db).catch(err => console.warn("Enable network fail:", err));
 
+                // Pantau status log masuk
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        console.log("Sesi dikesan:", user.uid);
+                        console.log("Pengguna dikesan:", user.uid);
                         updateStatus('online');
                         syncData();
                     } else {
-                        console.log("Tiada sesi. Memulakan login...");
-                        performLogin();
+                        await performLogin();
                     }
                 });
 
             } catch (err) {
-                console.error("Ralat Firebase:", err);
+                console.error("Firebase Initialization Error:", err);
                 updateStatus('offline');
-                // Cuba semula secara automatik dalam 5 saat
+                // Cuba semula jika gagal inisialisasi
                 setTimeout(startFirebase, 5000);
             }
         };
@@ -226,29 +208,29 @@
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                console.error("Ralat Login:", e);
+                console.error("Authentication failed:", e);
                 updateStatus('offline');
             }
         };
 
         const syncData = () => {
-            // Menggunakan struktur path yang wajib untuk Firestore
+            // Menggunakan struktur path yang betul bagi artifacts
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
             
+            // Dengar perubahan data secara real-time
             onSnapshot(colRef, (snap) => {
                 const list = [];
                 snap.forEach(d => list.push({id: d.id, ...d.data()}));
                 renderTable(list);
                 updateStatus('online');
             }, (err) => {
-                console.error("Ralat Sync Firestore:", err.message);
-                updateStatus('offline');
-                // Jika offline semasa sync, cuba aktifkan semula rangkaian
-                enableNetwork(db).catch(() => {});
+                console.error("Firestore sync error:", err);
+                // Jika ralat disebabkan oleh tiada talian, jangan terus tukar status kepada offline jika data masih ada di cache
+                if (!navigator.onLine) updateStatus('offline');
             });
         };
 
-        // UI HELPERS
+        // Menguruskan penghantaran borang
         document.getElementById('laporan-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
@@ -256,6 +238,7 @@
             btn.innerText = "SEDANG MENYIMPAN...";
 
             try {
+                // Simpan ke Firestore (akan berjaya di cache lokal dahulu jika offline)
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports'), {
                     nama: document.getElementById('nama_program').value.toUpperCase(),
                     tarikh: document.getElementById('tarikh').value,
@@ -264,13 +247,14 @@
                     imej: base64Images,
                     timestamp: new Date().toISOString()
                 });
-                alert("Laporan berjaya disimpan!");
+                
+                alert("Laporan telah disimpan! Ia akan dihantar ke pelayan secara automatik.");
                 document.getElementById('laporan-form').reset();
                 document.getElementById('preview-container').innerHTML = '';
                 base64Images = [];
             } catch (err) {
-                console.error("Ralat Simpan:", err);
-                alert("Gagal menyimpan. Sila pastikan sistem berstatus ONLINE.");
+                console.error("Submission failed:", err);
+                alert("Gagal menyimpan laporan. Sila periksa sambungan internet anda.");
             } finally {
                 btn.disabled = false;
                 btn.innerText = "SIMPAN LAPORAN";
@@ -281,14 +265,18 @@
             const tbody = document.getElementById('admin-table-body');
             if (!tbody) return;
             tbody.innerHTML = '';
+            // Susun mengikut tarikh terbaru
             data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
                 const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
                 tr.innerHTML = `
-                    <td class="p-6 font-bold">${item.tarikh}</td>
-                    <td class="p-6 font-black text-blue-900">${item.nama}</td>
-                    <td class="p-6 text-slate-500">${item.tempat}</td>
+                    <td class="p-6 font-bold text-xs">${item.tarikh}</td>
+                    <td class="p-6 font-black text-blue-900 text-sm uppercase">${item.nama}</td>
+                    <td class="p-6 text-slate-500 text-xs uppercase">${item.tempat}</td>
                     <td class="p-6 text-center">
-                        <button onclick="window.delDoc('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded hover:bg-red-100 transition"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        <button onclick="window.delDoc('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition shadow-sm">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -296,41 +284,52 @@
             lucide.createIcons();
         }
 
+        // Fungsi padam laporan (global supaya butang dalam string HTML boleh panggil)
         window.delDoc = async (id) => {
-            if (confirm("Padam laporan ini?")) {
+            if (confirm("Padam laporan ini secara kekal?")) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
                 } catch (e) {
-                    alert("Ralat memadam.");
+                    alert("Ralat memadam data.");
                 }
             }
         };
 
+        // Log masuk Pentadbir
         document.getElementById('modal-submit-btn').addEventListener('click', () => {
             const id = document.getElementById('admin-id').value;
             const pw = document.getElementById('admin-pw').value;
             if (id.toLowerCase() === "admin" && pw === "sekolah2024") {
-                window.toggleLoginModal(false);
-                window.switchAppView('admin');
-            } else { 
-                alert("ID atau Kata Laluan Salah!"); 
+                toggleLoginModal(false);
+                switchAppView('admin');
+            } else {
+                alert("ID Pengguna atau Kata Laluan salah!");
             }
         });
 
+        // Pratonton imej
         document.getElementById('gambar_upload').addEventListener('change', (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
             base64Images = [];
-            Array.from(e.target.files).slice(0,4).forEach(file => {
+            Array.from(e.target.files).slice(0, 4).forEach(file => {
+                if (file.size > 1024 * 1024) { // Had 1MB untuk base64 optimization
+                    alert("Imej " + file.name + " terlalu besar. Sila gunakan imej bawah 1MB.");
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     base64Images.push(ev.target.result);
-                    preview.innerHTML += `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border">`;
+                    const div = document.createElement('div');
+                    div.className = "relative group";
+                    div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-100 shadow-sm">`;
+                    preview.appendChild(div);
                 };
                 reader.readAsDataURL(file);
             });
         });
 
+        // Jalankan permulaan
         startFirebase();
         window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
