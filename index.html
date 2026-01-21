@@ -35,7 +35,6 @@
         .status-pending { background-color: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
     </style>
     <script>
-        // Fungsi UI diletakkan di sini supaya tersedia secara global sebelum dipanggil oleh butang
         function toggleLoginModal(show) {
             const modal = document.getElementById('login-modal');
             if (modal) {
@@ -62,7 +61,6 @@
             window.scrollTo(0,0);
         }
 
-        // Ekspos ke window untuk kepastian tambahan
         window.toggleLoginModal = toggleLoginModal;
         window.switchAppView = switchAppView;
     </script>
@@ -98,7 +96,6 @@
 
     <!-- UI Borang & Arkib -->
     <div id="main-content" class="container mx-auto px-4 py-10">
-        <!-- Borang -->
         <div id="dashboard-view" class="max-w-4xl mx-auto">
             <div class="text-center mb-10 no-print">
                 <h1 class="text-4xl font-black text-slate-900 mb-2 tracking-tight uppercase">LAPORAN PROGRAM KO-KURIKULUM</h1>
@@ -133,7 +130,6 @@
             </div>
         </div>
 
-        <!-- Pentadbir -->
         <div id="admin-view" class="hidden max-w-6xl mx-auto">
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
                 <div class="p-8 border-b flex justify-between items-center bg-slate-50/50">
@@ -165,15 +161,13 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, enableNetwork, disableNetwork } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, enableNetwork } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // CONFIG & GLOBAL STATE
         let db, auth;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'koko-smami-2024';
         let base64Images = [];
 
-        // UPDATE UI STATUS
         const updateStatus = (status) => {
             const dot = document.getElementById('status-dot');
             const txt = document.getElementById('status-text');
@@ -194,7 +188,6 @@
             }
         };
 
-        // INITIALIZE FIREBASE
         const startFirebase = async () => {
             try {
                 updateStatus('pending');
@@ -203,20 +196,25 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Pantau Sesi & Mulakan Sync
-                onAuthStateChanged(auth, (user) => {
+                // Paksa rangkaian untuk menyambung (Penting untuk iframe/deploy)
+                await enableNetwork(db);
+
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
+                        console.log("Sesi dikesan:", user.uid);
                         updateStatus('online');
                         syncData();
                     } else {
-                        // Jika tiada user, login segera
+                        console.log("Tiada sesi. Memulakan login...");
                         performLogin();
                     }
                 });
 
             } catch (err) {
-                console.error("Firebase Init Error:", err);
+                console.error("Ralat Firebase:", err);
                 updateStatus('offline');
+                // Cuba semula secara automatik dalam 5 saat
+                setTimeout(startFirebase, 5000);
             }
         };
 
@@ -228,13 +226,13 @@
                     await signInAnonymously(auth);
                 }
             } catch (e) {
-                console.error("Login Error:", e);
+                console.error("Ralat Login:", e);
                 updateStatus('offline');
             }
         };
 
-        // SYNC DATA
         const syncData = () => {
+            // Menggunakan struktur path yang wajib untuk Firestore
             const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
             
             onSnapshot(colRef, (snap) => {
@@ -243,8 +241,10 @@
                 renderTable(list);
                 updateStatus('online');
             }, (err) => {
-                console.error("Firestore Sync Error:", err);
+                console.error("Ralat Sync Firestore:", err.message);
                 updateStatus('offline');
+                // Jika offline semasa sync, cuba aktifkan semula rangkaian
+                enableNetwork(db).catch(() => {});
             });
         };
 
@@ -264,11 +264,12 @@
                     imej: base64Images,
                     timestamp: new Date().toISOString()
                 });
-                alert("Berjaya disimpan!");
+                alert("Laporan berjaya disimpan!");
                 document.getElementById('laporan-form').reset();
                 document.getElementById('preview-container').innerHTML = '';
                 base64Images = [];
             } catch (err) {
+                console.error("Ralat Simpan:", err);
                 alert("Gagal menyimpan. Sila pastikan sistem berstatus ONLINE.");
             } finally {
                 btn.disabled = false;
@@ -305,7 +306,6 @@
             }
         };
 
-        // ADMIN LOGIN
         document.getElementById('modal-submit-btn').addEventListener('click', () => {
             const id = document.getElementById('admin-id').value;
             const pw = document.getElementById('admin-pw').value;
@@ -317,7 +317,6 @@
             }
         });
 
-        // GAMBAR HANDLING
         document.getElementById('gambar_upload').addEventListener('change', (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
@@ -332,7 +331,6 @@
             });
         });
 
-        // MULAKAN SISTEM
         startFirebase();
         window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
