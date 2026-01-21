@@ -36,7 +36,7 @@
     </style>
     
     <script>
-        // Logik UI Asas (Sentiasa Berfungsi)
+        // UI Navigation Logic
         function toggleLoginModal(show) {
             const modal = document.getElementById('login-modal');
             if (show) {
@@ -44,8 +44,6 @@
                 document.getElementById('admin-id').focus();
             } else {
                 modal.classList.add('hidden');
-                document.getElementById('admin-id').value = '';
-                document.getElementById('admin-pw').value = '';
             }
         }
 
@@ -83,7 +81,6 @@
                         <span class="text-sm font-bold uppercase">PENTADBIR</span>
                     </button>
                 </div>
-                <!-- Firebase Status Indicator -->
                 <div id="db-status-container" class="flex items-center opacity-70">
                     <span id="status-dot" class="status-dot status-offline"></span>
                     <span id="status-text" class="text-[9px] font-bold uppercase tracking-tighter text-red-300">TIADA SAMBUNGAN</span>
@@ -215,100 +212,102 @@
         </div>
     </div>
 
-    <!-- FIREBASE INTEGRATION -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Global State
+        // ==========================================
+        // KONFIGURASI FIREBASE BARU ANDA (KEMAS KINI)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDxpft3kJkjTiBNLujEeDAYuE6qRBwIfgM",
+            authDomain: "smami-koko-digital.firebaseapp.com",
+            projectId: "smami-koko-digital",
+            storageBucket: "smami-koko-digital.firebasestorage.app",
+            messagingSenderId: "467380768572",
+            appId: "1:467380768572:web:49d832f6b1f1235a629839",
+            measurementId: "G-D80XKLVNN2"
+        };
+
         let db, auth;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'laporan-koko-smami';
+        const appId = 'smami-digital-koko-v1'; // ID unik untuk koleksi anda
         let base64Images = [];
 
-        // UI Feedback
-        const updateUIStatus = (status) => {
+        // UI Status Indicator
+        const updateStatus = (status) => {
             const dot = document.getElementById('status-dot');
             const txt = document.getElementById('status-text');
             if (status === 'online') {
                 dot.className = "status-dot status-online";
                 txt.innerText = "SISTEM ONLINE";
-                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-green-400";
+                txt.classList.replace('text-red-300', 'text-green-400');
             } else if (status === 'pending') {
                 dot.className = "status-dot status-pending";
                 txt.innerText = "MENYAMBUNG...";
-                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-amber-400";
+                txt.classList.remove('text-green-400', 'text-red-300');
             } else {
                 dot.className = "status-dot status-offline";
                 txt.innerText = "TIADA SAMBUNGAN";
-                txt.className = "text-[9px] font-bold uppercase tracking-tighter text-red-400";
+                txt.classList.replace('text-green-400', 'text-red-300');
             }
         };
 
-        // Initialize Firebase with explicit error handling
-        const initFirebase = async () => {
+        async function initFirebase() {
             try {
-                updateUIStatus('pending');
-                const firebaseConfig = JSON.parse(__firebase_config);
+                updateStatus('pending');
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Auth Listener
+                // Authentication Flow
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        console.log("Authenticated as:", user.uid);
-                        updateUIStatus('online');
-                        startSync();
+                        updateStatus('online');
+                        startRealtimeSync();
                     } else {
-                        updateUIStatus('offline');
+                        signInAnonymously(auth).catch(e => {
+                            console.error("Auth failed:", e);
+                            updateStatus('offline');
+                        });
                     }
                 });
-
-                // Trigger Sign In
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
             } catch (err) {
-                console.error("Firebase Setup Error:", err);
-                updateUIStatus('offline');
-                // Auto-retry after 5 seconds if critical
-                setTimeout(initFirebase, 5000);
+                console.error("Firebase init error:", err);
+                updateStatus('offline');
             }
-        };
+        }
 
-        // Real-time Data Sync
-        const startSync = () => {
-            const path = collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports');
-            onSnapshot(path, (snap) => {
-                const items = [];
-                snap.forEach(d => items.push({id: d.id, ...d.data()}));
-                renderTable(items);
+        // Realtime Data Listener
+        function startRealtimeSync() {
+            // Mengikut struktur Rule 1: /artifacts/{appId}/public/data/{collectionName}
+            const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+            onSnapshot(collectionPath, (snapshot) => {
+                const reports = [];
+                snapshot.forEach(d => reports.push({id: d.id, ...d.data()}));
+                renderTable(reports);
                 document.getElementById('loading-table').classList.add('hidden');
-            }, (err) => {
-                console.error("Sync Error:", err);
-                updateUIStatus('offline');
+            }, (error) => {
+                console.error("Sync error:", error);
+                updateStatus('offline');
             });
-        };
+        }
 
-        // Render functions
-        function renderTable(data) {
+        function renderTable(list) {
             const tbody = document.getElementById('admin-table-body');
             tbody.innerHTML = '';
-            data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
+            // Susun mengikut tarikh terbaru (sort dalam JS mematuhi Rule 2)
+            list.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-blue-50/30 transition text-sm";
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
                 tr.innerHTML = `
-                    <td class="p-6 font-bold text-slate-700">${item.tarikh}</td>
-                    <td class="p-6 font-black text-blue-900 uppercase text-[11px] leading-tight">${item.nama}</td>
-                    <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
-                    <td class="p-6 text-center">
+                    <td class="p-6 text-sm font-bold text-slate-700">${item.tarikh}</td>
+                    <td class="p-6 text-sm font-black text-blue-900 uppercase leading-tight">${item.nama}</td>
+                    <td class="p-6 text-xs text-slate-500 uppercase">${item.tempat}</td>
+                    <td class="p-6">
                         <div class="flex justify-center space-x-2">
-                            <button onclick='window.viewReport(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                            <button onclick="window.delReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                            <button onclick='window.viewReport(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <button onclick="window.delReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     </td>
                 `;
@@ -317,17 +316,69 @@
             lucide.createIcons();
         }
 
-        // Form Submission
-        document.getElementById('laporan-form').addEventListener('submit', async (e) => {
+        // Global Handlers
+        window.viewReport = (data) => {
+            const area = document.getElementById('printable-area');
+            area.innerHTML = `
+                <div class="flex justify-between items-center border-b-4 border-slate-900 pb-6 mb-8 uppercase">
+                    <img src="https://i.postimg.cc/SNmZtXqv/photo-2026-01-21-21-49-29.jpg" class="w-24 h-24 object-contain">
+                    <div class="text-right">
+                        <h1 class="text-2xl font-black">SMA AL-MAHADUL ISLAMI</h1>
+                        <p class="text-xs font-bold text-slate-500">Laporan Aktiviti Kokurikulum Digital</p>
+                    </div>
+                </div>
+                <div class="bg-slate-100 p-8 rounded-3xl mb-8 uppercase">
+                    <p class="text-[10px] font-black text-blue-800 mb-1 tracking-widest">UNIT / PERSATUAN / PROGRAM</p>
+                    <h2 class="text-3xl font-black text-slate-900">${data.nama}</h2>
+                    <div class="grid grid-cols-2 mt-4 text-sm font-bold gap-y-2">
+                        <div class="flex items-center"><span class="text-slate-400 w-20">TARIKH:</span> ${data.tarikh} (${data.hari})</div>
+                        <div class="flex items-center"><span class="text-slate-400 w-20">TEMPAT:</span> ${data.tempat}</div>
+                        <div class="flex items-center"><span class="text-slate-400 w-20">MASA:</span> ${data.masa}</div>
+                    </div>
+                </div>
+                <div class="space-y-6 uppercase">
+                    <div>
+                        <h3 class="font-black text-blue-800 text-[10px] mb-2 tracking-widest">OBJEKTIF PROGRAM</h3>
+                        <div class="p-5 border-2 border-slate-100 rounded-2xl text-sm leading-relaxed">${data.objektif || '-'}</div>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-blue-800 text-[10px] mb-2 tracking-widest">LAPORAN PENUH</h3>
+                        <div class="p-5 border-2 border-slate-100 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed min-h-[150px]">${data.aktiviti}</div>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-blue-800 text-[10px] mb-2 tracking-widest">GAMBAR AKTIVITI</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            ${(data.imej || []).map(img => `<img src="${img}" class="w-full h-64 object-cover rounded-2xl border-2 border-slate-50">`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('print-modal').classList.remove('hidden');
+        };
+
+        window.delReport = async (id) => {
+            if(confirm("Padam laporan ini secara kekal?")) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', id);
+                    await deleteDoc(docRef);
+                } catch (e) {
+                    alert("Ralat memadam: Pastikan anda online.");
+                }
+            }
+        };
+
+        // Form Submission Logic
+        document.getElementById('laporan-form').onsubmit = async (e) => {
             e.preventDefault();
-            if (!auth.currentUser) return alert("Sila tunggu sambungan sistem (SISTEM ONLINE).");
+            if (!auth.currentUser) return alert("Sila tunggu sambungan sistem...");
 
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
             btn.innerHTML = `<div class="loader mr-3"></div> MENYIMPAN...`;
 
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'koko_reports'), {
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+                await addDoc(collectionRef, {
                     nama: document.getElementById('nama_program').value.toUpperCase(),
                     tarikh: document.getElementById('tarikh').value,
                     hari: document.getElementById('hari').value.toUpperCase(),
@@ -338,88 +389,54 @@
                     imej: base64Images,
                     timestamp: new Date().toISOString()
                 });
-                alert("Laporan Berjaya Disimpan!");
-                document.getElementById('laporan-form').reset();
+                
+                alert("Laporan berjaya disimpan!");
+                e.target.reset();
                 document.getElementById('preview-container').innerHTML = '';
                 base64Images = [];
+                window.scrollTo(0,0);
             } catch (err) {
-                alert("Gagal menyimpan. Sila pastikan sambungan internet aktif.");
+                console.error(err);
+                alert("Gagal menyimpan. Sila semak Firestore Rules anda di Console.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
                 lucide.createIcons();
             }
-        });
-
-        // Global Handlers
-        window.viewReport = (report) => {
-            const area = document.getElementById('printable-area');
-            area.innerHTML = `
-                <div class="flex justify-between items-center border-b-4 border-slate-900 pb-6 mb-8 uppercase">
-                    <img src="https://i.postimg.cc/SNmZtXqv/photo-2026-01-21-21-49-29.jpg" class="w-24 h-24 object-contain">
-                    <div class="text-right">
-                        <h1 class="text-xl font-black">SMA AL-MAHADUL ISLAMI</h1>
-                        <p class="text-xs font-bold text-slate-600">Laporan Aktiviti Kokurikulum Digital</p>
-                    </div>
-                </div>
-                <div class="bg-slate-50 p-6 rounded-2xl border mb-8 uppercase">
-                    <p class="text-[10px] font-black text-blue-800 mb-1 tracking-widest">NAMA PROGRAM / UNIT</p>
-                    <p class="font-black text-xl text-slate-900">${report.nama}</p>
-                    <p class="text-sm font-bold mt-2">${report.tarikh} (${report.hari})</p>
-                </div>
-                <div class="space-y-6 uppercase text-sm">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><p class="font-black text-blue-800 mb-1">TEMPAT</p><p class="p-3 bg-white border rounded-lg">${report.tempat}</p></div>
-                        <div><p class="font-black text-blue-800 mb-1">MASA</p><p class="p-3 bg-white border rounded-lg">${report.masa}</p></div>
-                    </div>
-                    <div><p class="font-black text-blue-800 mb-1">OBJEKTIF</p><div class="p-4 bg-white border rounded-xl text-slate-600 min-h-[50px]">${report.objektif || 'TIADA'}</div></div>
-                    <div><p class="font-black text-blue-800 mb-1">LAPORAN AKTIVITI</p><div class="p-4 bg-white border rounded-xl text-slate-700 whitespace-pre-line min-h-[150px]">${report.aktiviti}</div></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        ${(report.imej || []).map(img => `<img src="${img}" class="w-full h-52 object-cover rounded-xl border">`).join('')}
-                    </div>
-                </div>
-            `;
-            document.getElementById('print-modal').classList.remove('hidden');
         };
 
-        window.delReport = async (id) => {
-            if (confirm("Padam laporan ini secara kekal?")) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
-                } catch (e) { alert("Ralat semasa memadam."); }
-            }
-        };
-
-        // Admin Login
-        document.getElementById('modal-submit-btn').addEventListener('click', () => {
-            const id = document.getElementById('admin-id').value;
-            const pw = document.getElementById('admin-pw').value;
-            if (id.toLowerCase() === "admin" && pw === "sekolah2024") {
-                toggleLoginModal(false);
-                switchAppView('admin');
-            } else {
-                alert("ID atau Kata Laluan Salah!");
-            }
-        });
-
-        // Image Handling
-        document.getElementById('gambar_upload').addEventListener('change', (e) => {
+        // Handling Images
+        document.getElementById('gambar_upload').onchange = (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
             base64Images = [];
+            
             Array.from(e.target.files).slice(0,4).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     base64Images.push(ev.target.result);
                     const div = document.createElement('div');
+                    div.className = "relative group";
                     div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200 shadow-sm">`;
                     preview.appendChild(div);
                 };
                 reader.readAsDataURL(file);
             });
-        });
+        };
 
-        // Run Init
+        // Admin Access
+        document.getElementById('modal-submit-btn').onclick = () => {
+            const id = document.getElementById('admin-id').value;
+            const pw = document.getElementById('admin-pw').value;
+            if (id.toLowerCase() === 'admin' && pw === 'sekolah2024') {
+                toggleLoginModal(false);
+                switchAppView('admin');
+            } else {
+                alert("ID atau Kata Laluan Salah!");
+            }
+        };
+
+        // Initialize
         initFirebase();
         window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
