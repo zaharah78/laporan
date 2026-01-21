@@ -23,15 +23,18 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Animasi Modal */
         .modal-enter { animation: modalIn 0.3s ease-out forwards; }
         @keyframes modalIn {
             from { opacity: 0; transform: scale(0.95) translateY(-20px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .status-online { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+        .status-offline { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen text-slate-900">
 
     <!-- Navigasi Utama -->
     <nav class="glass-nav text-white shadow-xl sticky top-0 z-40 no-print">
@@ -43,12 +46,19 @@
                     <span class="text-xs text-blue-100 opacity-80 uppercase tracking-widest font-medium">TASEK JUNJUNG</span>
                 </div>
             </div>
-            <div class="flex items-center space-x-6">
-                <button onclick="window.switchView('dashboard')" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">UTAMA</button>
-                <button id="admin-login-btn" onclick="window.openLoginModal()" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
-                    <i data-lucide="lock" class="w-4 h-4 text-blue-200"></i>
-                    <span class="text-sm font-bold uppercase">PENTADBIR</span>
-                </button>
+            <div class="flex flex-col items-end">
+                <div class="flex items-center space-x-6 mb-1">
+                    <button id="nav-home-btn" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">UTAMA</button>
+                    <button id="admin-login-btn" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
+                        <i data-lucide="lock" class="w-4 h-4 text-blue-200"></i>
+                        <span class="text-sm font-bold uppercase">PENTADBIR</span>
+                    </button>
+                </div>
+                <!-- Firebase Connection Status -->
+                <div id="db-status-container" class="flex items-center opacity-70">
+                    <span id="status-dot" class="status-dot status-offline"></span>
+                    <span id="status-text" class="text-[9px] font-bold uppercase tracking-tighter">OFFLINE</span>
+                </div>
             </div>
         </div>
     </nav>
@@ -72,8 +82,8 @@
                         <label class="block text-[10px] font-black text-slate-400 uppercase mb-1 ml-1">Kata Laluan</label>
                         <input type="password" id="admin-pw" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition text-sm font-bold" placeholder="••••••••">
                     </div>
-                    <button onclick="window.submitLogin()" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-900 transition mt-4 uppercase tracking-wider">MASUK SISTEM</button>
-                    <button onclick="window.closeLoginModal()" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
+                    <button id="modal-submit-btn" class="w-full bg-blue-800 text-white font-black py-4 rounded-xl shadow-lg hover:bg-blue-900 transition mt-4 uppercase tracking-wider">MASUK SISTEM</button>
+                    <button id="modal-close-btn" class="w-full text-slate-400 font-bold py-2 text-xs uppercase hover:text-slate-600 transition">BATAL</button>
                 </div>
             </div>
         </div>
@@ -92,7 +102,6 @@
                 <div class="bg-blue-800 p-1 no-print"></div> 
                 <div class="p-8 md:p-12">
                     <form id="laporan-form" class="space-y-8">
-                        <!-- Maklumat Asas -->
                         <div class="space-y-6">
                             <div class="flex items-center space-x-2 text-blue-800 font-bold uppercase text-xs tracking-wider">
                                 <i data-lucide="info" class="w-4 h-4"></i>
@@ -114,7 +123,6 @@
                             </div>
                         </div>
 
-                        <!-- Perincian Aktiviti -->
                         <div class="space-y-6 pt-4">
                             <div class="flex items-center space-x-2 text-blue-800 font-bold uppercase text-xs tracking-wider"><i data-lucide="align-left" class="w-4 h-4"></i><span>PERINCIAN AKTIVITI</span></div>
                             <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Objektif</label><textarea id="objektif" rows="2" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition" placeholder="NYATAKAN OBJEKTIF PROGRAM..."></textarea></div>
@@ -149,7 +157,7 @@
                         <h2 class="text-2xl font-black text-slate-900 uppercase">ARKIB LAPORAN DIGITAL</h2>
                         <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Senarai semua aktiviti yang telah direkodkan</p>
                     </div>
-                    <button onclick="window.switchView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition flex items-center">
+                    <button id="admin-back-btn" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition flex items-center">
                         <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i> Kembali
                     </button>
                 </div>
@@ -172,7 +180,7 @@
         <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200">
             <div id="printable-area" class="bg-white p-12 leading-relaxed text-slate-900"></div>
             <div class="bg-slate-50 p-6 flex justify-end space-x-4 border-t sticky bottom-0">
-                <button onclick="window.closePrintModal()" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
+                <button id="close-print-btn" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500">Tutup</button>
                 <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide shadow-lg">Cetak Laporan</button>
             </div>
         </div>
@@ -183,7 +191,7 @@
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Konfigurasi Firebase
+        // Firebase Configuration
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -194,47 +202,69 @@
         let base64Images = [];
         let unsubscribeReports = null;
 
-        // --- FUNGSI GLOBAL (Didaftarkan ke window untuk butang HTML) ---
+        // --- UI NAVIGATION & MODAL HANDLERS ---
+        const loginModal = document.getElementById('login-modal');
+        const adminView = document.getElementById('admin-view');
+        const dashboardView = document.getElementById('dashboard-view');
 
-        window.openLoginModal = () => {
-            const modal = document.getElementById('login-modal');
-            modal.classList.remove('hidden');
+        const openLoginModal = () => {
+            loginModal.classList.remove('hidden');
             document.getElementById('admin-id').focus();
         };
 
-        window.closeLoginModal = () => {
-            document.getElementById('login-modal').classList.add('hidden');
+        const closeLoginModal = () => {
+            loginModal.classList.add('hidden');
             document.getElementById('admin-id').value = '';
             document.getElementById('admin-pw').value = '';
         };
 
-        window.submitLogin = () => {
+        const switchView = (view) => {
+            dashboardView.classList.add('hidden');
+            adminView.classList.add('hidden');
+            if (view === 'admin') adminView.classList.remove('hidden');
+            else dashboardView.classList.remove('hidden');
+            window.scrollTo(0,0);
+        };
+
+        const submitLogin = () => {
             const id = document.getElementById('admin-id').value;
             const pw = document.getElementById('admin-pw').value;
-            
-            // Kredential Admin (Boleh diubah)
             if (id.toLowerCase() === "admin" && pw === "sekolah2024") {
-                window.closeLoginModal();
-                window.switchView('admin');
+                closeLoginModal();
+                switchView('admin');
             } else {
                 alert("ID Pengguna atau Kata Laluan Salah!");
             }
         };
 
-        window.switchView = (view) => {
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.add('hidden');
-            const targetView = document.getElementById(view + '-view');
-            if (targetView) targetView.classList.remove('hidden');
-            window.scrollTo(0,0);
-        };
-
-        window.closePrintModal = () => {
+        // --- ATTACH EVENTS DIRECTLY (Bypass onclick issues) ---
+        document.getElementById('admin-login-btn').addEventListener('click', openLoginModal);
+        document.getElementById('modal-close-btn').addEventListener('click', closeLoginModal);
+        document.getElementById('modal-submit-btn').addEventListener('click', submitLogin);
+        document.getElementById('nav-home-btn').addEventListener('click', () => switchView('dashboard'));
+        document.getElementById('admin-back-btn').addEventListener('click', () => switchView('dashboard'));
+        document.getElementById('close-print-btn').addEventListener('click', () => {
             document.getElementById('print-modal').classList.add('hidden');
+        });
+
+        // --- FIREBASE CONNECTION STATUS ---
+        const updateStatusIndicator = (isOnline) => {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            if (isOnline) {
+                dot.className = "status-dot status-online";
+                text.innerText = "ONLINE";
+                text.classList.add('text-green-300');
+                text.classList.remove('text-red-300');
+            } else {
+                dot.className = "status-dot status-offline";
+                text.innerText = "OFFLINE";
+                text.classList.add('text-red-300');
+                text.classList.remove('text-green-300');
+            }
         };
 
-        // --- SISTEM FIREBASE ---
-
+        // --- FIREBASE LOGIC ---
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -242,12 +272,21 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (error) { console.error("Ralat Auth:", error); }
+                updateStatusIndicator(true);
+            } catch (error) { 
+                console.error("Auth Error:", error);
+                updateStatusIndicator(false);
+            }
         };
 
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
-            if (user) setupFirestoreListeners();
+            if (user) {
+                updateStatusIndicator(true);
+                setupFirestoreListeners();
+            } else {
+                updateStatusIndicator(false);
+            }
         });
 
         initAuth();
@@ -262,10 +301,13 @@
                 snapshot.forEach(doc => reports.push({ id: doc.id, ...doc.data() }));
                 renderAdminTable(reports);
                 document.getElementById('loading-table').classList.add('hidden');
-            }, (err) => console.error("Ralat Snapshot:", err));
+            }, (err) => {
+                console.error("Snapshot error:", err);
+                updateStatusIndicator(false);
+            });
         }
 
-        // Simpan Laporan
+        // Form Submission
         document.getElementById('laporan-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return alert("Sila tunggu sehingga sistem sedia...");
@@ -293,7 +335,7 @@
                 base64Images = [];
             } catch (err) { 
                 console.error(err);
-                alert("Gagal menyimpan data ke awan."); 
+                alert("Gagal menyimpan data."); 
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
@@ -301,37 +343,14 @@
             }
         });
 
+        // Delete Handler (Global to window for table buttons)
         window.deleteReport = async (id) => {
-            if (confirm("Adakah anda pasti mahu memadam laporan ini secara kekal?")) {
+            if (confirm("Padam laporan ini secara kekal?")) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
-                } catch (err) { alert("Ralat semasa memadam."); }
+                } catch (err) { alert("Ralat memadam."); }
             }
         };
-
-        function renderAdminTable(data) {
-            const tbody = document.getElementById('admin-table-body');
-            tbody.innerHTML = '';
-            
-            // Susun ikut tarikh terkini
-            data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-blue-50/30 transition text-sm";
-                tr.innerHTML = `
-                    <td class="p-6 font-bold text-slate-700">${item.tarikh}</td>
-                    <td class="p-6 font-black text-blue-900 uppercase text-[11px] leading-tight">${item.nama}</td>
-                    <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
-                    <td class="p-6 text-center">
-                        <div class="flex justify-center space-x-2">
-                            <button onclick='window.generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100 transition" title="Lihat & Cetak"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                            <button onclick="window.deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition" title="Padam"><i data-lucide="trash" class="w-4 h-4"></i></button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            lucide.createIcons();
-        }
 
         window.generatePreview = (report) => {
             const area = document.getElementById('printable-area');
@@ -341,59 +360,22 @@
                     <div class="text-right">
                         <h1 class="text-xl font-black">SMA AL-MAHADUL ISLAMI</h1>
                         <p class="text-xs font-bold text-slate-600">Laporan Aktiviti Kokurikulum Digital</p>
-                        <p class="text-[9px] text-slate-400 mt-1">ID REKOD: ${report.id.toUpperCase()}</p>
                     </div>
                 </div>
-                
-                <div class="grid grid-cols-3 gap-4 mb-8">
-                    <div class="col-span-2 bg-slate-50 p-6 rounded-2xl border">
-                        <p class="text-[10px] font-black text-blue-800 mb-1 uppercase tracking-widest">NAMA PROGRAM / UNIT</p>
-                        <p class="font-black text-xl text-slate-900 uppercase leading-tight">${report.nama}</p>
-                    </div>
-                    <div class="bg-slate-50 p-6 rounded-2xl border">
-                        <p class="text-[10px] font-black text-blue-800 mb-1 uppercase tracking-widest">TARIKH & HARI</p>
-                        <p class="font-bold text-slate-900">${report.tarikh} (${report.hari})</p>
-                    </div>
+                <div class="bg-slate-50 p-6 rounded-2xl border mb-8">
+                    <p class="text-[10px] font-black text-blue-800 mb-1 uppercase tracking-widest">NAMA PROGRAM / UNIT</p>
+                    <p class="font-black text-xl text-slate-900 uppercase">${report.nama}</p>
+                    <p class="text-sm font-bold mt-2">${report.tarikh} (${report.hari})</p>
                 </div>
-
                 <div class="space-y-8 uppercase text-sm">
                     <div class="grid grid-cols-2 gap-6">
-                        <div>
-                            <p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">TEMPAT</p>
-                            <p class="text-slate-700 font-bold bg-white p-3 rounded-lg border">${report.tempat}</p>
-                        </div>
-                        <div>
-                            <p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">MASA</p>
-                            <p class="text-slate-700 font-bold bg-white p-3 rounded-lg border">${report.masa}</p>
-                        </div>
+                        <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">TEMPAT</p><p class="text-slate-700 font-bold bg-white p-3 rounded-lg border">${report.tempat}</p></div>
+                        <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">MASA</p><p class="text-slate-700 font-bold bg-white p-3 rounded-lg border">${report.masa}</p></div>
                     </div>
-
-                    <div>
-                        <p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">OBJEKTIF PROGRAM</p>
-                        <div class="bg-white p-4 rounded-xl border italic min-h-[60px] text-slate-600">${report.objektif || 'TIADA MAKLUMAT'}</div>
-                    </div>
-
-                    <div>
-                        <p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">LAPORAN RINGKAS AKTIVITI</p>
-                        <div class="bg-white p-4 rounded-xl border min-h-[150px] text-slate-700 whitespace-pre-line">${report.aktiviti}</div>
-                    </div>
-
-                    <div>
-                        <p class="font-black border-l-4 border-blue-800 pl-3 mb-4 text-blue-800 no-print">LAMPIRAN GAMBAR</p>
-                        <div class="grid grid-cols-2 gap-4">
-                            ${(report.imej || []).map(img => `<img src="${img}" class="w-full h-64 object-cover rounded-xl border shadow-sm">`).join('')}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-12 pt-8 border-t border-dashed flex justify-between items-end">
-                    <div class="text-center w-48">
-                        <div class="h-16 border-b border-slate-300 mb-2"></div>
-                        <p class="text-[10px] font-black uppercase">Disediakan Oleh</p>
-                    </div>
-                    <div class="text-center w-48">
-                        <div class="h-16 border-b border-slate-300 mb-2"></div>
-                        <p class="text-[10px] font-black uppercase">Disahkan Oleh</p>
+                    <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">OBJEKTIF</p><div class="bg-white p-4 rounded-xl border text-slate-600">${report.objektif || 'TIADA'}</div></div>
+                    <div><p class="font-black border-l-4 border-blue-800 pl-3 mb-2 text-blue-800">LAPORAN AKTIVITI</p><div class="bg-white p-4 rounded-xl border text-slate-700 whitespace-pre-line">${report.aktiviti}</div></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${(report.imej || []).map(img => `<img src="${img}" class="w-full h-64 object-cover rounded-xl border shadow-sm">`).join('')}
                     </div>
                 </div>
             `;
@@ -401,12 +383,33 @@
             lucide.createIcons();
         };
 
-        // Pengurusan Gambar (Base64)
+        function renderAdminTable(data) {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '';
+            data.sort((a,b) => (b.timestamp || "").localeCompare(a.timestamp || "")).forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-50/30 transition text-sm";
+                tr.innerHTML = `
+                    <td class="p-6 font-bold text-slate-700">${item.tarikh}</td>
+                    <td class="p-6 font-black text-blue-900 uppercase text-[11px] leading-tight">${item.nama}</td>
+                    <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
+                    <td class="p-6 text-center">
+                        <div class="flex justify-center space-x-2">
+                            <button onclick='window.generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100 transition"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                            <button onclick="window.deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // Image handling
         document.getElementById('gambar_upload').addEventListener('change', (e) => {
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
             base64Images = [];
-            
             const files = Array.from(e.target.files).slice(0, 4);
             files.forEach(file => {
                 const reader = new FileReader();
@@ -414,23 +417,14 @@
                     base64Images.push(ev.target.result);
                     const div = document.createElement('div');
                     div.className = "relative group";
-                    div.innerHTML = `
-                        <img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition rounded-xl flex items-center justify-center">
-                            <i data-lucide="check-circle" class="text-white w-6 h-6"></i>
-                        </div>
-                    `;
+                    div.innerHTML = `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">`;
                     preview.appendChild(div);
-                    lucide.createIcons();
                 };
                 reader.readAsDataURL(file);
             });
         });
 
-        // Initialize Icons
-        window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
+        window.addEventListener('DOMContentLoaded', () => lucide.createIcons());
     </script>
 </body>
 </html>
