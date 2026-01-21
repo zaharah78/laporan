@@ -12,13 +12,24 @@
         .hidden { display: none; }
         .glass-nav { background: rgba(29, 78, 216, 0.95); backdrop-filter: blur(10px); }
         @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
+        
+        /* Animasi loading sederhana */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #1d4ed8;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
 
     <nav class="glass-nav text-white shadow-xl sticky top-0 z-40 no-print">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-4 cursor-pointer" onclick="location.reload()">
                 <img src="https://i.postimg.cc/SNmZtXqv/photo-2026-01-21-21-49-29.jpg" alt="Logo Sekolah" class="w-12 h-12 object-contain bg-white rounded-full p-1 shadow-md">
                 <div class="leading-tight">
                     <span class="font-bold text-xl tracking-wide block text-white uppercase">SMA AL-MAHADUL ISLAMI</span>
@@ -26,10 +37,10 @@
                 </div>
             </div>
             <div class="flex items-center space-x-6">
-                <button onclick="switchView('dashboard')" class="text-sm font-bold hover:text-blue-200 transition uppercase">DASHBOARD</button>
-                <button onclick="handleAdminLogin()" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
+                <button onclick="switchView('dashboard')" class="text-sm font-bold hover:text-blue-200 transition uppercase tracking-wider">DASHBOARD</button>
+                <button id="admin-login-btn" onclick="handleAdminLogin()" class="bg-white/10 border border-white/20 px-5 py-2 rounded-xl hover:bg-white/20 transition flex items-center space-x-2">
                     <i data-lucide="lock" class="w-4 h-4 text-blue-200"></i>
-                    <span class="text-sm font-bold uppercase">LOG MASUK ADMIN</span>
+                    <span class="text-sm font-bold uppercase">ADMIN</span>
                 </button>
             </div>
         </div>
@@ -42,7 +53,6 @@
         <div id="dashboard-view" class="max-w-4xl mx-auto">
             <div class="text-center mb-10 no-print">
                 <h1 class="text-4xl font-black text-slate-900 mb-2 tracking-tight uppercase">LAPORAN PROGRAM KO-KURIKULUM</h1>
-                <!-- Nota Cloud disembunyikan mengikut permintaan -->
             </div>
 
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
@@ -57,23 +67,23 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="md:col-span-2">
                                     <label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Nama Program / Unit</label>
-                                    <input type="text" id="nama_program" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase text-sm">
+                                    <input type="text" id="nama_program" placeholder="CONTOH: KELAB ROBOTIK" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase text-sm focus:ring-2 focus:ring-blue-500 transition">
                                 </div>
-                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tarikh</label><input type="date" id="tarikh" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tarikh</label><input type="date" id="tarikh" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 transition"></div>
                                 <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Hari</label>
-                                    <select id="hari" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase">
+                                    <select id="hari" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition">
                                         <option>ISNIN</option><option>SELASA</option><option>RABU</option><option>KHAMIS</option><option>JUMAAT</option><option>SABTU</option><option>AHAD</option>
                                     </select>
                                 </div>
-                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tempat</label><input type="text" id="tempat" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl uppercase text-sm"></div>
-                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Masa</label><input type="text" id="masa" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl uppercase text-sm"></div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Tempat</label><input type="text" id="tempat" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl uppercase text-sm focus:ring-2 focus:ring-blue-500 transition"></div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Masa</label><input type="text" id="masa" placeholder="CONTOH: 2.00 - 4.00 PETANG" required class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl uppercase text-sm focus:ring-2 focus:ring-blue-500 transition"></div>
                             </div>
                         </div>
 
                         <div class="space-y-6 pt-4">
                             <div class="flex items-center space-x-2 text-blue-800 font-bold uppercase text-xs tracking-wider"><i data-lucide="align-left" class="w-4 h-4"></i><span>PERINCIAN</span></div>
-                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Objektif</label><textarea id="objektif" rows="2" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase"></textarea></div>
-                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Laporan Aktiviti</label><textarea id="aktiviti" rows="5" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase"></textarea></div>
+                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Objektif</label><textarea id="objektif" rows="2" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition"></textarea></div>
+                            <div><label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Laporan Aktiviti</label><textarea id="aktiviti" rows="5" placeholder="NYATAKAN RINGKASAN AKTIVITI YANG DIJALANKAN..." class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:ring-2 focus:ring-blue-500 transition"></textarea></div>
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2 uppercase">Gambar (Maksimum 4)</label>
                                 <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-200 border-dashed rounded-xl bg-slate-50 hover:bg-slate-100 transition cursor-pointer relative">
@@ -82,13 +92,14 @@
                                         <div class="flex text-sm text-slate-600">
                                             <label for="gambar_upload" class="relative cursor-pointer font-bold text-blue-700 uppercase"><span>Muat naik fail</span><input id="gambar_upload" type="file" class="sr-only" accept="image/*" multiple></label>
                                         </div>
+                                        <p class="text-xs text-slate-400 uppercase font-medium">PNG, JPG sehingga 1MB setiap satu</p>
                                     </div>
                                 </div>
-                                <div id="preview-container" class="grid grid-cols-4 gap-4 mt-4"></div>
+                                <div id="preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
                             </div>
                         </div>
 
-                        <button type="submit" id="btn-submit" class="w-full bg-blue-800 text-white font-black py-5 rounded-xl shadow-lg flex justify-center items-center text-xl uppercase tracking-wide">
+                        <button type="submit" id="btn-submit" class="w-full bg-blue-800 text-white font-black py-5 rounded-xl shadow-lg flex justify-center items-center text-xl uppercase tracking-wide hover:bg-blue-900 transition active:scale-[0.98]">
                             <i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan
                         </button>
                     </form>
@@ -99,9 +110,11 @@
         <!-- ADMIN VIEW -->
         <div id="admin-view" class="hidden max-w-6xl mx-auto">
             <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-                <div class="p-8 border-b flex justify-between items-center bg-slate-50/50">
+                <div class="p-8 border-b flex flex-col md:flex-row justify-between items-center bg-slate-50/50 gap-4">
                     <div><h2 class="text-2xl font-black text-slate-900 uppercase">ARKIB LAPORAN DIGITAL</h2></div>
-                    <button onclick="switchView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs">Kembali</button>
+                    <div class="flex space-x-3">
+                        <button onclick="switchView('dashboard')" class="px-5 py-2.5 bg-white border rounded-lg font-bold uppercase text-xs hover:bg-slate-100 transition">Kembali</button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -109,18 +122,21 @@
                         <tbody id="admin-table-body" class="divide-y"></tbody>
                     </table>
                 </div>
-                <div id="loading-table" class="text-center py-20 uppercase text-xs font-bold text-slate-400">Memuatkan data...</div>
+                <div id="loading-table" class="text-center py-20 flex flex-col items-center justify-center space-y-3">
+                    <div class="loader"></div>
+                    <span class="uppercase text-xs font-bold text-slate-400 tracking-widest">Memuatkan data dari pangkalan data...</span>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- PRINT MODAL -->
     <div id="print-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 no-print">
-        <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-0 border border-slate-200 shadow-2xl">
             <div id="printable-area" class="bg-white p-12 leading-relaxed text-slate-900"></div>
-            <div class="bg-slate-50 p-6 flex justify-end space-x-4 border-t">
-                <button onclick="closePrintModal()" class="px-6 py-2.5 font-bold uppercase text-xs">Tutup</button>
-                <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide">Cetak Laporan</button>
+            <div class="bg-slate-50 p-6 flex justify-end space-x-4 border-t sticky bottom-0">
+                <button onclick="closePrintModal()" class="px-6 py-2.5 font-bold uppercase text-xs text-slate-500 hover:text-slate-700">Tutup</button>
+                <button onclick="window.print()" class="px-8 py-3 bg-blue-800 text-white rounded-xl font-black uppercase text-sm tracking-wide shadow-lg hover:bg-blue-900 transition">Cetak Laporan</button>
             </div>
         </div>
     </div>
@@ -131,7 +147,7 @@
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Configuration handled by environment
+        // Konfigurasi daripada persekitaran
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -193,11 +209,14 @@
 
         document.getElementById('laporan-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentUser) return;
+            if (!currentUser) {
+                alert("Sistem belum sedia. Sila tunggu seketika.");
+                return;
+            }
             
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
-            btn.innerText = "SEDANG MENYIMPAN...";
+            btn.innerHTML = `<div class="loader mr-3"></div> MENYIMPAN...`;
 
             try {
                 const newReport = {
@@ -221,6 +240,7 @@
                 base64Images = [];
             } catch (err) {
                 console.error("Save error:", err);
+                alert("Gagal menyimpan. Sila cuba lagi.");
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="cloud-upload" class="mr-3 w-7 h-7"></i> Simpan Laporan`;
@@ -235,6 +255,7 @@
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'koko_reports', id));
                 } catch (err) {
                     console.error("Delete error:", err);
+                    alert("Ralat memadam data.");
                 }
             }
         };
@@ -243,18 +264,40 @@
             document.getElementById('dashboard-view').classList.add('hidden');
             document.getElementById('admin-view').classList.add('hidden');
             document.getElementById(view + '-view').classList.remove('hidden');
+            window.scrollTo(0,0);
         };
 
+        // Pembaikan fungsi log masuk agar tidak stuck
         window.handleAdminLogin = () => {
-            const id = prompt("ID PENTADBIR:");
-            const pw = prompt("KATA LALUAN:");
-            if (id === "admin123" && pw === "sekolah2024") switchView('admin');
-            else alert("ID atau Kata Laluuan Salah.");
+            try {
+                const id = prompt("ID PENTADBIR:");
+                if (id === null) return; // Pengguna tekan batal
+                
+                const pw = prompt("KATA LALUAN:");
+                if (pw === null) return; // Pengguna tekan batal
+                
+                if (id.trim() === "admin123" && pw.trim() === "sekolah2024") {
+                    switchView('admin');
+                } else {
+                    alert("ID atau Kata Laluan Salah.");
+                }
+            } catch (e) {
+                console.error("Login Prompt Error:", e);
+                // Jika prompt gagal, guna fallback modal sederhana
+                const fallbackId = window.prompt("Sila masukkan ID:");
+                if(fallbackId === "admin123") switchView('admin');
+            }
         };
 
         function renderAdminTable(data) {
             const tbody = document.getElementById('admin-table-body');
             tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-10 text-center text-slate-400 font-bold uppercase text-xs tracking-widest">Tiada rekod dijumpai</td></tr>`;
+                return;
+            }
+
             data.sort((a,b) => b.timestamp.localeCompare(a.timestamp)).forEach(item => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-blue-50/30 transition text-sm";
@@ -262,9 +305,11 @@
                     <td class="p-6 font-bold text-slate-700">${item.tarikh}</td>
                     <td class="p-6 font-black text-blue-900 uppercase text-[11px]">${item.nama}</td>
                     <td class="p-6 uppercase text-xs text-slate-500">${item.tempat}</td>
-                    <td class="p-6 text-center flex justify-center space-x-2">
-                        <button onclick='generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                        <button onclick="deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                    <td class="p-6 text-center">
+                        <div class="flex justify-center space-x-2">
+                            <button onclick='generatePreview(${JSON.stringify(item)})' class="p-2 bg-blue-50 text-blue-800 rounded-lg hover:bg-blue-100 transition" title="Lihat/Cetak"><i data-lucide="file-text" class="w-4 h-4"></i></button>
+                            <button onclick="deleteReport('${item.id}')" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition" title="Padam"><i data-lucide="trash" class="w-4 h-4"></i></button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -277,11 +322,22 @@
             const preview = document.getElementById('preview-container');
             preview.innerHTML = '';
             base64Images = [];
-            Array.from(e.target.files).slice(0, 4).forEach(file => {
+            
+            const files = Array.from(e.target.files).slice(0, 4);
+            files.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     base64Images.push(ev.target.result);
-                    preview.innerHTML += `<img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">`;
+                    const div = document.createElement('div');
+                    div.className = "relative group";
+                    div.innerHTML = `
+                        <img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-xl border-2 border-slate-200">
+                        <div class="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center rounded-xl transition">
+                            <i data-lucide="check-circle" class="text-white"></i>
+                        </div>
+                    `;
+                    preview.appendChild(div);
+                    lucide.createIcons();
                 };
                 reader.readAsDataURL(file);
             });
@@ -289,29 +345,43 @@
 
         window.generatePreview = (report) => {
             const area = document.getElementById('printable-area');
-            const gridCols = report.imej.length > 1 ? 'grid-cols-2' : 'grid-cols-1';
+            const gridCols = report.imej && report.imej.length > 1 ? 'grid-cols-2' : 'grid-cols-1';
+            
             area.innerHTML = `
                 <div class="flex justify-between border-b-4 border-slate-900 pb-6 mb-8">
                     <img src="https://i.postimg.cc/SNmZtXqv/photo-2026-01-21-21-49-29.jpg" class="w-24 h-24">
                     <div class="text-right uppercase">
                         <h1 class="text-xl font-black">SMA AL-MAHADUL ISLAMI</h1>
                         <p class="text-[10px] text-slate-500 font-bold">Laporan Digital Projek: MITAJ</p>
+                        <p class="text-[9px] text-slate-400">ID REKOD: ${report.id}</p>
                     </div>
                 </div>
                 <div class="bg-slate-50 p-6 rounded-2xl mb-8 uppercase text-sm border">
                     <p class="font-black text-blue-800 text-lg mb-2">${report.nama}</p>
-                    <p class="text-slate-600">Tarikh: ${report.tarikh} (${report.hari}) | Masa: ${report.masa}</p>
-                    <p class="text-slate-600">Tempat: ${report.tempat}</p>
+                    <p class="text-slate-600 font-bold">Tarikh: ${report.tarikh} (${report.hari})</p>
+                    <p class="text-slate-600 font-bold">Masa: ${report.masa} | Tempat: ${report.tempat}</p>
                 </div>
                 <div class="space-y-6 uppercase text-sm">
-                    <div><p class="font-black border-l-4 border-blue-800 pl-2 mb-2 text-blue-900">Objektif</p><p class="text-slate-700">${report.objektif}</p></div>
-                    <div><p class="font-black border-l-4 border-blue-800 pl-2 mb-2 text-blue-900">Laporan Aktiviti</p><p class="whitespace-pre-line text-slate-700">${report.aktiviti}</p></div>
                     <div>
-                        <p class="font-black border-l-4 border-blue-800 pl-2 mb-4 text-blue-900">Lampiran Bergambar</p>
-                        <div class="grid ${gridCols} gap-4">
-                            ${report.imej.map(img => `<img src="${img}" class="w-full h-64 object-cover rounded-xl shadow-sm border">`).join('')}
-                        </div>
+                        <p class="font-black border-l-4 border-blue-800 pl-2 mb-2 text-blue-900 tracking-wider">OBJEKTIF PROGRAM</p>
+                        <p class="text-slate-700 bg-slate-50/50 p-3 rounded-lg border border-slate-100">${report.objektif || 'TIADA MAKLUMAT'}</p>
                     </div>
+                    <div>
+                        <p class="font-black border-l-4 border-blue-800 pl-2 mb-2 text-blue-900 tracking-wider">LAPORAN AKTIVITI</p>
+                        <p class="whitespace-pre-line text-slate-700 bg-slate-50/50 p-3 rounded-lg border border-slate-100">${report.aktiviti || 'TIADA MAKLUMAT'}</p>
+                    </div>
+                    <div>
+                        <p class="font-black border-l-4 border-blue-800 pl-2 mb-4 text-blue-900 tracking-wider">LAMPIRAN BERGAMBAR</p>
+                        ${report.imej && report.imej.length > 0 ? `
+                            <div class="grid ${gridCols} gap-4">
+                                ${report.imej.map(img => `<img src="${img}" class="w-full h-64 object-cover rounded-xl shadow-sm border-2 border-slate-100">`).join('')}
+                            </div>
+                        ` : `<p class="text-xs text-slate-400 italic">Tiada lampiran gambar disediakan.</p>`}
+                    </div>
+                </div>
+                <div class="mt-12 pt-8 border-t border-slate-100 flex justify-between items-end opacity-60">
+                    <div class="text-[9px] uppercase font-bold text-slate-400">Dicetak pada: ${new Date().toLocaleString('ms-MY')}</div>
+                    <div class="w-32 h-1 bg-slate-200"></div>
                 </div>
             `;
             document.getElementById('print-modal').classList.remove('hidden');
@@ -320,6 +390,11 @@
 
         window.closePrintModal = () => document.getElementById('print-modal').classList.add('hidden');
     </script>
-    <script>lucide.createIcons();</script>
+    <script>
+        // Inisialisasi ikon Lucide pada permulaan
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
 </body>
 </html>
